@@ -1,0 +1,13 @@
+[[tasklines.add]]
+name = "Add task {{ task }}"
+command.args = ["apt-repo", "add", "{{ task }}"]
+
+
+[[tasklines.rm]]
+name = "Remove task {{ task }}"
+command.args = ["apt-repo", "rm", "{{ task }}"]
+
+
+[[tasklines.clean]]
+name = "Remove all tasks"
+command.args = ["apt-repo", "clean"]

@@ -1,0 +1,39 @@
+[vars]
+update = true
+
+
+[[tasklines.update]]
+name = "Update packages cache"
+shell.command = "apt-get update"
+
+
+[[tasklines.dist-upgrade]]
+run-taskline = { taskline = "update" }
+if = "{{ update }}"
+
+[[tasklines.dist-upgrade]]
+name = "Upgrade system"
+shell.command = "apt-get dist-upgrade -y"
+
+
+[[tasklines.install]]
+run-taskline = { taskline = "update" }
+if = "{{ update }}"
+
+[[tasklines.install]]
+name = "Install packages {{ packages }}"
+shell.command = "apt-get install -y {{ packages | quote }}"
+
+
+[[tasklines.reinstall]]
+run-taskline = { taskline = "update" }
+if = "{{ update }}"
+
+[[tasklines.reinstall]]
+name = "Reinstall packages {{ packages }}"
+shell.command = "apt-get reinstall -y {{ packages | quote }}"
+
+
+[[tasklines.remove]]
+name = "Remove packages {{ packages }}"
+shell.command = "apt-get remove -y {{ packages | quote }}"

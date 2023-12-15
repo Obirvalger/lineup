@@ -1,0 +1,42 @@
+[tasks.format]
+toolchain = "nightly"
+
+[tasks.clippy]
+env = { "CARGO_MAKE_CLIPPY_ARGS" = "-- -D warnings" }
+
+[tasks.build-old]
+toolchain = "1.56"
+command = "cargo"
+args = ["build"]
+
+[tasks.default]
+clear = true
+dependencies = [
+	"format",
+	"clippy",
+	"build",
+]
+
+[tasks.watch]
+watch = { postpone = true, watch = ["./src"] }
+dependencies = [
+	"default",
+]
+
+[tasks.w]
+alias = "watch"
+
+[tasks.fmt]
+alias = "format"
+
+[tasks.b]
+alias = "build"
+
+[tasks.r]
+alias = "build-release"
+
+[tasks.c]
+alias = "clippy"
+
+[tasks.f]
+alias = "format"

@@ -1,0 +1,31 @@
+[vars]
+copy_root_key = true
+
+
+[[tasklines._create-ssh-dir]]
+shell.command = "mkdir -p ~{{ user }}/.ssh"
+
+[[tasklines._create-ssh-dir]]
+shell.command = "chown {{ user }}:{{ user }} ~{{ user }}/.ssh"
+
+[[tasklines._create-ssh-dir]]
+shell.command = "chmod 0700 ~{{ user }}/.ssh"
+
+
+[[tasklines._copy-root-key]]
+run-taskline = { taskline = "_create-ssh-dir" }
+if = "! [ -d ~{{ user }}/.ssh ]"
+
+[[tasklines._copy-root-key]]
+shell.command = "cat ~root/.ssh/authorized_keys >> ~{{ user }}/.ssh/authorized_keys"
+
+
+[[taskline]]
+name = "Add user \"{{ user }}\""
+command.args = ["useradd", "-m", "{{ user }}"]
+command.check = false
+
+[[taskline]]
+name = "Copy root authorized_keys to user {{ user }}"
+run-taskline = { taskline = "_copy-root-key" }
+if = "{{ copy_root_key }}"
