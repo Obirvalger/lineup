@@ -1,0 +1,73 @@
+# Variables used in all manifest
+[vars]
+branch = "sisyphus"
+
+
+[workers.vml-root]
+[workers.vml-root.engine.vml]
+# Vml vm name, use worker name if not set
+name = "nerdctl"
+# Vml vm user
+user = "root"
+image = "alt-{{ branch }}"
+mem = "1G"
+
+# Create worker for the same vm, but with another user
+[workers.vml-user]
+[workers.vml-user.engine.vml]
+# Vml vm name, use worker name if not set
+name = "nerdctl"
+# Vml vm user
+user = "user"
+# Do not setup vm as it will be setup by vml-root worker
+setup = false
+
+
+# Setup nerdctl: install packages and start services
+[[tasklines.setup-nerdctl]]
+run-taskline = { module = "apt-get", taskline = "install" }
+vars.packages = ["nerdctl", "nerdctl-rootless"]
+
+[[tasklines.setup-nerdctl]]
+run-taskline = { module = "systemctl", taskline = "enable" }
+vars.services = ["containerd"]
+
+[[tasklines.setup-nerdctl]]
+run-taskline = { module = "useradd" }
+vars.user = "user"
+
+
+# Simple test for run for both root and rootless nerdctl
+[[tasklines.test]]
+name = "Run alt container via nerdctl"
+# Sleep to ensure /run/user/500/containerd dirs created
+shell.command = "sleep 3; nerdctl run --rm alt -- apt-get update"
+
+
+[taskset.setup-nerdctl]
+run-taskline = { taskline = "setup-nerdctl" }
+# Use list of regexes to limit workers to run task, [.*] is default
+workers = ["vml-root"]
+
+[taskset.setup-nerdctl-rootless]
+# Tasks in taskset run independently, requires used to create some order
+requires = ["setup-nerdctl"]
+shell.command = "containerd-rootless-setuptool.sh install"
+workers = ["vml-user"]
+
+[taskset.test]
+requires = ["setup-nerdctl"]
+run-taskline = { taskline = "test" }
+workers = ["vml-root"]
+
+[taskset.test-rootless]
+requires = ["setup-nerdctl-rootless"]
+run-taskline = { taskline = "test" }
+workers = ["vml-user"]
+
+[taskset.version]
+requires = ["test-rootless", "test"]
+shell.command = "nerdctl -v"
+# Show stdout of runnig command, log as trace by default
+shell.stdout = { print = true }
+workers = ["vml-user"]
