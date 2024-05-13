@@ -38,5 +38,8 @@ alias = "build-release"
 [tasks.c]
 alias = "clippy"
 
+[tasks.t]
+alias = "test"
+
 [tasks.f]
 alias = "format"
