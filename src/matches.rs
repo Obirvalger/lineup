@@ -85,3 +85,70 @@ impl Render for Matches {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn simple_out() -> Result<()> {
+        assert!(Matches::OutRe("version".to_string()).is_match("version", "").unwrap());
+
+        Ok(())
+    }
+
+    #[test]
+    fn simple_err() -> Result<()> {
+        assert!(Matches::ErrRe("version".to_string()).is_match("", "version").unwrap());
+
+        Ok(())
+    }
+
+    #[test]
+    fn simple_any_out() -> Result<()> {
+        assert!(Matches::AnyRe("version".to_string()).is_match("version", "").unwrap());
+
+        Ok(())
+    }
+
+    #[test]
+    fn simple_any_err() -> Result<()> {
+        assert!(Matches::AnyRe("version".to_string()).is_match("", "version")?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn simple_or() -> Result<()> {
+        let matches = "or = [ { err-re = 'LLM' }, { err-re = 'toml' }]";
+        let matches = toml::from_str::<Matches>(matches)?;
+        assert!(matches.is_match("", "toml")?);
+        assert!(matches.is_match("", "LLM")?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn simple_and() -> Result<()> {
+        let matches = "and = [ { err-re = 'LLM' }, { err-re = 'toml' }]";
+        let matches = toml::from_str::<Matches>(matches)?;
+        assert!(!matches.is_match("", "toml")?);
+        assert!(!matches.is_match("", "LLM")?);
+        assert!(matches.is_match("", "toml LLM")?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn nested() -> Result<()> {
+        let matches =
+            "and = [ { out-re = 'ls' }, {or = [{ err-re = 'LLM' }, { err-re = 'toml' }]}]";
+        let matches = toml::from_str::<Matches>(matches)?;
+        assert!(matches.is_match("ls", "toml")?);
+        assert!(matches.is_match("ls", "LLM")?);
+        assert!(!matches.is_match("", "toml LLM")?);
+        assert!(!matches.is_match("ls", "")?);
+
+        Ok(())
+    }
+}
