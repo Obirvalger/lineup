@@ -211,9 +211,9 @@ fn host_cmd(args: &HashMap<String, Value>) -> tera::Result<Value> {
     }
 
     if capture_stdout {
-        Ok(Value::String(out.stdout()))
+        Ok(Value::String(out.stdout().trim_end().to_string()))
     } else {
-        Ok(Value::String(out.stderr()))
+        Ok(Value::String(out.stderr().trim_end().to_string()))
     }
 }
 
