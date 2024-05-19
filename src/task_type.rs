@@ -136,6 +136,15 @@ pub struct CommandType {
     params: CmdParams,
 }
 
+impl CommandType {
+    pub fn run(&self, context: &Context, worker: &Worker) -> Result<()> {
+        worker.exec(
+            &self.args.render(context, "args in command task")?,
+            &self.params.render(context, "command task")?,
+        )
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
@@ -144,6 +153,15 @@ pub struct ShellType {
     command: String,
     #[serde(flatten)]
     params: CmdParams,
+}
+
+impl ShellType {
+    pub fn run(&self, context: &Context, worker: &Worker) -> Result<()> {
+        worker.shell(
+            self.command.render(context, "args in command task")?,
+            &self.params.render(context, "command task")?,
+        )
+    }
 }
 
 fn deserialize_run_taskline_type_source<'de, D>(
@@ -181,11 +199,37 @@ pub struct RunTasklineType {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
+#[serde(untagged)]
+pub enum TestTypeCommand {
+    Command(CommandType),
+    Shell(ShellType),
+}
+
+impl TestTypeCommand {
+    pub fn run(&self, context: &Context, worker: &Worker) -> Result<()> {
+        match self {
+            Self::Command(command) => command.run(context, worker),
+            Self::Shell(shell) => shell.run(context, worker),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+pub struct TestType {
+    #[serde(alias = "cmds")]
+    commands: Vec<TestTypeCommand>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum TaskType {
     Command(CommandType),
     Shell(ShellType),
     File(FileType),
     RunTaskline(RunTasklineType),
+    Test(TestType),
 }
 
 impl TaskType {
@@ -198,14 +242,8 @@ impl TaskType {
     ) -> Result<()> {
         let mut context = context.to_owned();
         match self {
-            Self::Command(CommandType { args, params }) => worker.exec(
-                &args.render(&context, "args in command task")?,
-                &params.render(&context, "command task")?,
-            ),
-            Self::Shell(ShellType { command, params }) => worker.shell(
-                command.render(&context, "command in shell task")?,
-                &params.render(&context, "shell task")?,
-            ),
+            Self::Command(command) => command.run(&context, worker),
+            Self::Shell(shell) => shell.run(&context, worker),
             Self::File(FileType { dst, source }) => {
                 let dst = dst.render(&context, "file task dst")?;
                 match source {
@@ -255,6 +293,13 @@ impl TaskType {
 
                 for task in taskline {
                     task.task.run(&task.name, &context, &dir, &new_tasklines, worker)?;
+                }
+
+                Ok(())
+            }
+            Self::Test(TestType { commands }) => {
+                for command in commands {
+                    command.run(&context, worker)?;
                 }
 
                 Ok(())
