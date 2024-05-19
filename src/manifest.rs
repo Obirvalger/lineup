@@ -172,10 +172,6 @@ pub enum Engine {
     Host,
 }
 
-fn default_worker_setup_engine() -> bool {
-    true
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 #[serde(deny_unknown_fields)]
@@ -185,10 +181,7 @@ pub struct Worker {
     pub table_by_item: Table,
     #[serde(default)]
     pub table_by_name: Table,
-    pub engine_name: Option<String>,
     pub engine: Option<Engine>,
-    #[serde(default = "default_worker_setup_engine")]
-    pub setup_engine: bool,
 }
 
 fn default_taskset_elem_workers() -> Vec<String> {
