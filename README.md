@@ -5,4 +5,4 @@ Command `lineup` uses lineup manifest file LM.toml by default. Manifest contais
 workers description and tasks. Lineup setup workers and run specified tasks on
 them.
 
-See [examples](doc/examples).
+See [examples](doc/examples) and [reference](doc/reference/README.md).
