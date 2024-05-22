@@ -1,4 +1,5 @@
 # Reference
 
 References:
-* [Manifest](manifest.md) - describes lineup manifest.
+* [Manifest](manifest.md) - Describes lineup manifest;
+* [Templates](templates.md) - Describes templates.
