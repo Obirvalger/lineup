@@ -158,8 +158,8 @@ pub struct ShellType {
 impl ShellType {
     pub fn run(&self, context: &Context, worker: &Worker) -> Result<()> {
         worker.shell(
-            self.command.render(context, "args in command task")?,
-            &self.params.render(context, "command task")?,
+            self.command.render(context, "command in shell task")?,
+            &self.params.render(context, "shell task")?,
         )
     }
 }
