@@ -77,7 +77,7 @@ Tasks are defined by a [task type](#task-types) and have some parameters:
 
 ## Task types
 There are several types of tasks:
-* [command](#command-task) - Run a command from an args array;
+* [exec](#exec-task) - Run a command from an args array;
 * [shell](#shell-task) - Run a command from a shell string;
 * [file](#file-task) - Copy a file to the worker;
 * [run-taskline](#runTaskline-task) - Run a taskline from the file;
@@ -111,7 +111,7 @@ Some common command parameters:
 * `success-matches` - [Matches](#matches) that need to be matched for success;
 * `failure-matches` - [Matches](#matches) that match means failure.
 
-## Command task
+## Exec task
 Consists of an `args` array of strings represented command and
 [common command parameters](#common-command-parameters).
 

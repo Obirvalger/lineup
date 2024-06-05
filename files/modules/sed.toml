@@ -1,6 +1,6 @@
 [[taskline]]
 name = "Sed file {{ file }} with expression {{ expression }}"
-command.args = ["sed", "-E", "-e", "{{ expression }}", "-i", "{{ file }}"]
+exec.args = ["sed", "-E", "-e", "{{ expression }}", "-i", "{{ file }}"]
 
 [[taskline]]
 name = "Run validate command `{{ validate }}`"

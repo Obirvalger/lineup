@@ -130,17 +130,17 @@ impl Default for CmdParams {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
-pub struct CommandType {
+pub struct ExecType {
     args: Vec<String>,
     #[serde(flatten)]
     params: CmdParams,
 }
 
-impl CommandType {
+impl ExecType {
     pub fn run(&self, context: &Context, worker: &Worker) -> Result<()> {
         worker.exec(
-            &self.args.render(context, "args in command task")?,
-            &self.params.render(context, "command task")?,
+            &self.args.render(context, "args in exec task")?,
+            &self.params.render(context, "exec task")?,
         )
     }
 }
@@ -201,14 +201,14 @@ pub struct RunTasklineType {
 #[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub enum TestTypeCommand {
-    Command(CommandType),
+    Exec(ExecType),
     Shell(ShellType),
 }
 
 impl TestTypeCommand {
     pub fn run(&self, context: &Context, worker: &Worker) -> Result<()> {
         match self {
-            Self::Command(command) => command.run(context, worker),
+            Self::Exec(exec) => exec.run(context, worker),
             Self::Shell(shell) => shell.run(context, worker),
         }
     }
@@ -225,7 +225,7 @@ pub struct TestType {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TaskType {
-    Command(CommandType),
+    Exec(ExecType),
     Shell(ShellType),
     File(FileType),
     RunTaskline(RunTasklineType),
@@ -242,7 +242,7 @@ impl TaskType {
     ) -> Result<()> {
         let mut context = context.to_owned();
         match self {
-            Self::Command(command) => command.run(&context, worker),
+            Self::Exec(exec) => exec.run(&context, worker),
             Self::Shell(shell) => shell.run(&context, worker),
             Self::File(FileType { dst, source }) => {
                 let dst = dst.render(&context, "file task dst")?;

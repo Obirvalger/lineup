@@ -22,8 +22,8 @@ shell.command = "cat ~root/.ssh/authorized_keys >> ~{{ user }}/.ssh/authorized_k
 
 [[taskline]]
 name = "Add user \"{{ user }}\""
-command.args = ["useradd", "-m", "{{ user }}"]
-command.check = false
+exec.args = ["useradd", "-m", "{{ user }}"]
+exec.check = false
 
 [[taskline]]
 name = "Copy root authorized_keys to user {{ user }}"
