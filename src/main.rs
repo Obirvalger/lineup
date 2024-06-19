@@ -33,6 +33,7 @@ mod task;
 mod task_type;
 mod template;
 mod tmpdir;
+mod tsort;
 mod vars;
 mod worker;
 

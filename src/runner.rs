@@ -1,10 +1,10 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::Context as AnyhowContext;
-use anyhow::{bail, Result};
+use anyhow::Result;
 use rayon::prelude::*;
 use regex::RegexSet;
 
@@ -13,6 +13,7 @@ use crate::error::Error;
 use crate::manifest::{Manifest, Tasklines, Taskset};
 use crate::render::Render;
 use crate::template::Context;
+use crate::tsort::tsort;
 use crate::vars::Vars;
 use crate::worker::Worker;
 
@@ -25,43 +26,6 @@ pub struct Runner {
     pub workers: Vec<Worker>,
     pub dir: PathBuf,
     worker_exists: Option<ExistsAction>,
-}
-
-fn task_layers<T: ToString, R: ToString>(
-    in_tasks: &BTreeMap<T, BTreeSet<R>>,
-) -> Result<Vec<Vec<String>>> {
-    let mut tasks: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    for (task, requires) in in_tasks.iter() {
-        let requires = requires.iter().map(|r| r.to_string()).collect::<BTreeSet<String>>();
-        tasks.insert(task.to_string(), requires);
-    }
-    let mut layers = vec![];
-    while !tasks.is_empty() {
-        let mut layer = vec![];
-        for (task, requires) in tasks.iter() {
-            if requires.is_empty() {
-                layer.push(task.to_string());
-            }
-        }
-
-        for task in layer.iter() {
-            tasks.remove(task);
-        }
-
-        for (_, requires) in tasks.iter_mut() {
-            for task in layer.iter() {
-                requires.remove(task);
-            }
-        }
-
-        if layer.is_empty() {
-            bail!("Empty layer");
-        } else {
-            layers.push(layer);
-        }
-    }
-
-    Ok(layers)
 }
 
 impl Runner {
@@ -123,7 +87,7 @@ impl Runner {
             .map(|(n, t)| (n.to_string(), t.requires.to_owned()))
             .collect::<BTreeMap<_, _>>();
 
-        for layer in task_layers(&tasks_graph)? {
+        for layer in tsort(&tasks_graph, "taskset requires")? {
             let mut workers_by_task = BTreeMap::new();
 
             // setup workers by task sequentially to ensure the same worker does not run

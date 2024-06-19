@@ -22,6 +22,8 @@ pub enum Error {
     CommandFailedSuccsessMatches(String),
     #[error("no engine provided to worker `{0}`")]
     NoEngine(String),
+    #[error("failed tsort in {0}")]
+    TSort(String),
     #[error("failed to setup worker `{0}`")]
     WorkerSetupFailed(String),
 }
