@@ -54,6 +54,10 @@ impl EngineVml {
             options.push("--memory".to_string());
             options.push(memory.to_string());
         }
+        if let Some(nproc) = &self.nproc {
+            options.push("--nproc".to_string());
+            options.push(nproc.to_string());
+        }
         if let Some(image) = &self.image {
             options.push("--image".to_string());
             options.push(image.to_string());
