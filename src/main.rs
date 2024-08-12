@@ -34,6 +34,7 @@ mod task_type;
 mod template;
 mod tmpdir;
 mod tsort;
+mod use_unit;
 mod vars;
 mod worker;
 

@@ -11,6 +11,7 @@ use crate::table::Table;
 use crate::task::Task;
 use crate::task_type::TaskType;
 use crate::template::Context;
+use crate::use_unit::UseUnit;
 use crate::vars::Vars;
 
 pub type Workers = BTreeMap<String, Worker>;
@@ -32,6 +33,13 @@ pub struct DefaultWorker {
 pub struct Defaults {
     #[serde(default)]
     pub worker: DefaultWorker,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Use {
+    #[serde(default)]
+    pub vars: Vec<UseUnit>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -231,6 +239,9 @@ fn default_taskset() -> Taskset {
 pub struct Manifest {
     #[serde(default)]
     pub vars: Vars,
+    #[serde(default)]
+    #[serde(rename = "use")]
+    pub use_: Use,
     #[serde(default)]
     pub default: Defaults,
     #[serde(default)]

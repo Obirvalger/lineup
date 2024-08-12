@@ -1,19 +1,21 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::Context as AnyhowContext;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use rayon::prelude::*;
 use regex::RegexSet;
 
+use crate::config::config_dir;
 use crate::engine::ExistsAction;
 use crate::error::Error;
 use crate::manifest::{Manifest, Tasklines, Taskset};
 use crate::render::Render;
 use crate::template::Context;
 use crate::tsort::tsort;
+use crate::use_unit::UseUnit;
 use crate::vars::Vars;
 use crate::worker::Worker;
 
@@ -29,6 +31,53 @@ pub struct Runner {
 }
 
 impl Runner {
+    fn resolve_module(module: &Path, dir: &Path) -> PathBuf {
+        if module.is_absolute() {
+            module.to_owned()
+        } else if module.starts_with(".") || module.starts_with("..") {
+            dir.join(module)
+        } else {
+            config_dir().join("modules").join(module).with_extension("toml")
+        }
+    }
+
+    fn get_use_vars(dir: &Path, use_units: &[UseUnit]) -> Result<Vars> {
+        let mut vars = Vars::new(BTreeMap::new());
+
+        for use_unit in use_units {
+            let module = Self::resolve_module(&use_unit.module, dir);
+            let mut use_vars = Self::from_manifest(&module)?.vars.into_map();
+
+            if !use_unit.items.is_empty() {
+                use_vars.retain(|k, _| use_unit.items.contains(k));
+                let var_names = use_vars.keys().cloned().collect::<BTreeSet<_>>();
+                let diff = use_unit.items.difference(&var_names).collect::<BTreeSet<_>>();
+                if !diff.is_empty() {
+                    let vars_s = diff.into_iter().cloned().collect::<Vec<_>>().join(", ");
+                    bail!(Error::UseVars(vars_s, module))
+                }
+            }
+
+            if let Some(prefix) = &use_unit.prefix {
+                if !prefix.is_empty() {
+                    use_vars = BTreeMap::from([(prefix.to_string(), serde_json::json!(use_vars))]);
+                }
+            } else {
+                let prefix = module
+                    .file_stem()
+                    .expect("empty module filename")
+                    .to_string_lossy()
+                    .to_string()
+                    .replace('-', "_");
+                use_vars = BTreeMap::from([(prefix, serde_json::json!(use_vars))]);
+            }
+
+            vars.extend(Vars::new(use_vars));
+        }
+
+        Ok(vars)
+    }
+
     pub fn from_manifest<S: AsRef<OsStr>>(manifest_path: S) -> Result<Self> {
         let manifest_path = Path::new(manifest_path.as_ref());
         let dir = manifest_path
@@ -40,13 +89,14 @@ impl Runner {
         let manifest: Manifest = toml::from_str(&manifest_str)
             .with_context(|| format!("Failed to parse manifest `{}`", &manifest_path.display()))?;
         let defaults = &manifest.default;
-        let vars = manifest.vars.to_owned();
+        let mut vars = Self::get_use_vars(&dir, &manifest.use_.vars)?;
+        vars.extend(manifest.vars.to_owned());
         let taskset = manifest.taskset.to_owned();
         let mut tasklines = manifest.tasklines.to_owned();
         if !manifest.taskline.is_empty() {
             tasklines.insert("".to_string(), manifest.taskline.to_owned());
         }
-        let context = manifest.vars.context()?;
+        let context = vars.context()?;
         let workers =
             Worker::from_manifest_workers(&manifest.workers, &defaults.worker, &context)?;
         let worker_exists = None;

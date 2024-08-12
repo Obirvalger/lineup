@@ -24,6 +24,8 @@ pub enum Error {
     NoEngine(String),
     #[error("failed tsort in {0}")]
     TSort(String),
+    #[error("cannot use vars `{0}` from the `{1}`")]
+    UseVars(String, PathBuf),
     #[error("failed to setup worker `{0}`")]
     WorkerSetupFailed(String),
 }

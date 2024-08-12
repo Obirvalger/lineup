@@ -42,6 +42,10 @@ impl Vars {
         self.map.extend(other.map);
     }
 
+    pub fn into_map(self) -> BTreeMap<String, Value> {
+        self.map
+    }
+
     pub fn context(&self) -> Result<Context> {
         let context = Context::from_serialize(self)?;
 
