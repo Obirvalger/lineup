@@ -11,7 +11,7 @@ use crate::render::Render;
 #[serde(rename_all = "kebab-case")]
 pub struct Vars {
     #[serde(flatten)]
-    pub map: BTreeMap<String, Value>,
+    map: BTreeMap<String, Value>,
 }
 
 fn render_value<S: AsRef<str>>(value: &mut Value, context: &Context, place: S) -> Result<()> {
