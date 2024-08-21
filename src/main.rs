@@ -25,6 +25,7 @@ mod files;
 mod items;
 mod manifest;
 mod matches;
+mod module;
 mod render;
 mod runner;
 mod string_or_int;

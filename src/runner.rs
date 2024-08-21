@@ -8,10 +8,10 @@ use anyhow::{bail, Result};
 use rayon::prelude::*;
 use regex::RegexSet;
 
-use crate::config::config_dir;
 use crate::engine::ExistsAction;
 use crate::error::Error;
 use crate::manifest::{Manifest, Tasklines, Taskset};
+use crate::module;
 use crate::render::Render;
 use crate::taskline::Taskline;
 use crate::template::Context;
@@ -32,21 +32,11 @@ pub struct Runner {
 }
 
 impl Runner {
-    fn resolve_module(module: &Path, dir: &Path) -> PathBuf {
-        if module.is_absolute() {
-            module.to_owned()
-        } else if module.starts_with(".") || module.starts_with("..") {
-            dir.join(module)
-        } else {
-            config_dir().join("modules").join(module).with_extension("toml")
-        }
-    }
-
     fn get_use_tasklines(dir: &Path, use_units: &[UseUnit]) -> Result<Tasklines> {
         let mut tasklines = BTreeMap::new();
 
         for use_unit in use_units {
-            let module = Self::resolve_module(&use_unit.module, dir);
+            let module = module::resolve(&use_unit.module, dir);
             let manifest = Self::from_manifest(&module)?;
             let mut use_tasklines = manifest.tasklines;
 
@@ -85,7 +75,7 @@ impl Runner {
         let mut vars = Vars::new(BTreeMap::new());
 
         for use_unit in use_units {
-            let module = Self::resolve_module(&use_unit.module, dir);
+            let module = module::resolve(&use_unit.module, dir);
             let mut use_vars = Self::from_manifest(&module)?.vars.into_map();
 
             if !use_unit.items.is_empty() {
