@@ -2,12 +2,44 @@
 
 Lineup manifest consists of several sections, most of which are optional.
 
+* [use](#Use) - Use items from other files;
 * [vars](#Vars) - Set global variables;
 * [workers](#Workers) - Define workers;
 * [default](#Default) - Overwrite defaults;
 * [tasklines](#Tasklines) - Define tasklines;
 * [taskset](#Taskset) Define taskset.
 
+
+# Use
+Add items from other files to the main manifest. It has two subsections -
+`vars` and `tasklines`. They are represented via array of tables with keys:
+* `module` - Name of a [module](modules.md). Or path to the file containing
+    the taskline, if it starts with `/` or `.`, it is interpreted as a path;
+* `prefix` - Add prefix to names. By default use module or file name. To use
+    items without prefix, set it to an empty string `""`;
+* `items` - Array of names of items used from module. By default use all items.
+
+For short just module name could be used instead of a table.
+To work properly with `vars` the `prefix` shoud contain only alphanumerals and
+`_`. When get default prefix from a module name, `-` will be substituted with
+`_`.
+
+Example of using a varible `update` and all tasklines from the `apt-get`
+module:
+```toml
+[use]
+vars = [{ module = "apt-get", items = ["update"]}]
+tasklines = ["apt-get"]
+
+
+[taskset.show]
+shell.cmd = "echo {{ apt_get.update }}"
+shell.stdout = { print = true }
+
+[taskset.install]
+run = "apt-get.install"
+vars.packages = "ncdu"
+```
 
 # Vars
 This is a table with string keys (variable names) and values of any type.
