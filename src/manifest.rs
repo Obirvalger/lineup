@@ -10,12 +10,12 @@ use crate::string_or_int::StringOrInt;
 use crate::table::Table;
 use crate::task::Task;
 use crate::task_type::TaskType;
+use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::use_unit::UseUnit;
 use crate::vars::Vars;
 
 pub type Workers = BTreeMap<String, Worker>;
-pub type Taskline = Vec<TasklineElem>;
 pub type Tasklines = BTreeMap<String, Taskline>;
 pub type Taskset = BTreeMap<String, TasksetElem>;
 
@@ -40,6 +40,8 @@ pub struct Defaults {
 pub struct Use {
     #[serde(default)]
     pub vars: Vec<UseUnit>,
+    #[serde(default)]
+    pub tasklines: Vec<UseUnit>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -249,7 +251,7 @@ pub struct Manifest {
     #[serde(default = "default_taskset")]
     pub taskset: Taskset,
     #[serde(default)]
-    pub taskline: Taskline,
+    pub taskline: Vec<TasklineElem>,
     #[serde(default)]
     pub tasklines: Tasklines,
 }

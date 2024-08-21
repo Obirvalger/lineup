@@ -11,6 +11,7 @@ use crate::manifest::Tasklines;
 use crate::matches::Matches;
 use crate::render::Render;
 use crate::runner::Runner;
+use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::tmpdir::tmpfile;
 use crate::worker::Worker;
@@ -268,7 +269,7 @@ impl TaskType {
                 let taskline = taskline.render(&context, "run-taskline taskline")?;
                 let mut dir = dir.to_owned();
                 let mut new_tasklines = tasklines.to_owned();
-                let taskline = if file.display().to_string().is_empty() {
+                let mut taskline = if file.display().to_string().is_empty() {
                     tasklines
                         .get(&taskline)
                         .ok_or(Error::BadTaskline(taskline.to_string(), PathBuf::from("")))?
@@ -278,20 +279,29 @@ impl TaskType {
                     if !file.is_absolute() {
                         file = dir.join(file);
                     }
-                    let runner = Runner::from_manifest(&file)?;
-                    dir = runner.dir.to_owned();
-                    new_tasklines = runner.tasklines.to_owned();
-                    let mut new_context = runner.vars.context()?;
-                    new_context.extend(context);
-                    context = new_context;
-                    runner
-                        .tasklines
-                        .get(&taskline)
-                        .ok_or(Error::BadTaskline(taskline, file))?
-                        .to_owned()
+                    Taskline::File { file, name: taskline }
                 };
 
-                for task in taskline {
+                while !taskline.is_line() {
+                    match &taskline {
+                        Taskline::File { file, name } => {
+                            let runner = Runner::from_manifest(file)?;
+                            runner.dir.clone_into(&mut dir);
+                            runner.tasklines.clone_into(&mut new_tasklines);
+                            let mut new_context = runner.vars.context()?;
+                            new_context.extend(context);
+                            context = new_context;
+                            runner
+                                .tasklines
+                                .get(name)
+                                .ok_or(Error::BadTaskline(name.to_string(), file.to_owned()))?
+                                .clone_into(&mut taskline)
+                        }
+                        Taskline::Line(_) => break,
+                    }
+                }
+
+                for task in taskline.as_line().expect("get not line variant of taskline") {
                     task.task.run(&task.name, &context, &dir, &new_tasklines, worker)?;
                 }
 

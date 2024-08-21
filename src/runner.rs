@@ -13,6 +13,7 @@ use crate::engine::ExistsAction;
 use crate::error::Error;
 use crate::manifest::{Manifest, Tasklines, Taskset};
 use crate::render::Render;
+use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::tsort::tsort;
 use crate::use_unit::UseUnit;
@@ -39,6 +40,45 @@ impl Runner {
         } else {
             config_dir().join("modules").join(module).with_extension("toml")
         }
+    }
+
+    fn get_use_tasklines(dir: &Path, use_units: &[UseUnit]) -> Result<Tasklines> {
+        let mut tasklines = BTreeMap::new();
+
+        for use_unit in use_units {
+            let module = Self::resolve_module(&use_unit.module, dir);
+            let manifest = Self::from_manifest(&module)?;
+            let mut use_tasklines = manifest.tasklines;
+
+            if !use_unit.items.is_empty() {
+                use_tasklines.retain(|k, _| use_unit.items.contains(k));
+                let taskline_names = use_tasklines.keys().cloned().collect::<BTreeSet<_>>();
+                let diff = use_unit.items.difference(&taskline_names).collect::<BTreeSet<_>>();
+                if !diff.is_empty() {
+                    let tasklines_s = diff.into_iter().cloned().collect::<Vec<_>>().join(", ");
+                    bail!(Error::UseTasklines(tasklines_s, module))
+                }
+            }
+
+            let prefix = use_unit.prefix.to_owned().unwrap_or_else(|| {
+                module.file_stem().expect("empty module filename").to_string_lossy().to_string()
+            });
+            if !prefix.is_empty() {
+                use_tasklines = use_tasklines
+                    .into_keys()
+                    .map(|name| {
+                        (
+                            format!("{}.{}", prefix, name),
+                            Taskline::File { file: module.to_owned(), name },
+                        )
+                    })
+                    .collect();
+            }
+
+            tasklines.extend(use_tasklines);
+        }
+
+        Ok(tasklines)
     }
 
     fn get_use_vars(dir: &Path, use_units: &[UseUnit]) -> Result<Vars> {
@@ -92,15 +132,21 @@ impl Runner {
         let mut vars = Self::get_use_vars(&dir, &manifest.use_.vars)?;
         vars.extend(manifest.vars.to_owned());
         let taskset = manifest.taskset.to_owned();
-        let mut tasklines = manifest.tasklines.to_owned();
+
+        let mut tasklines = Self::get_use_tasklines(&dir, &manifest.use_.tasklines)?;
+        let mut manifest_tasklines = manifest.tasklines.to_owned();
         if !manifest.taskline.is_empty() {
-            tasklines.insert("".to_string(), manifest.taskline.to_owned());
+            manifest_tasklines
+                .insert("".to_string(), Taskline::Line(manifest.taskline.to_owned()));
         }
+        tasklines.extend(manifest_tasklines);
+
         let context = vars.context()?;
         let workers =
             Worker::from_manifest_workers(&manifest.workers, &defaults.worker, &context)?;
         let worker_exists = None;
         let skip_tasks = vec![];
+
         Ok(Self { dir, taskset, skip_tasks, tasklines, vars, workers, worker_exists })
     }
 

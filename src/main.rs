@@ -31,6 +31,7 @@ mod string_or_int;
 mod table;
 mod task;
 mod task_type;
+mod taskline;
 mod template;
 mod tmpdir;
 mod tsort;
