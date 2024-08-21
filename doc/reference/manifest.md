@@ -112,6 +112,7 @@ There are several types of tasks:
 * [exec](#exec-task) - Run a command from an args array;
 * [shell](#shell-task) - Run a command from a shell string;
 * [file](#file-task) - Copy a file to the worker;
+* [run](#run-task) - Run a taskline;
 * [run-taskline](#runTaskline-task) - Run a taskline from the file;
 * [test](#test-task) - An array of commands.
 
@@ -160,6 +161,20 @@ Example of creating `/tmp/test-file` on the worker:
 ```toml
 file.dst = "/tmp/test-file"
 file.content = "Test"
+```
+
+## Run task
+Run a taskline from manifest tasklines.
+
+Example of a task installing `apt-repo` with `apt-get`:
+```toml
+[use]
+tasklines = ["apt-get"]
+
+
+[taskset.install]
+run = "apt-get.install"
+vars.packages = "apt-repo"
 ```
 
 ## RunTaskline task

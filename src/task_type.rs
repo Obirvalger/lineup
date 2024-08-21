@@ -207,6 +207,7 @@ pub enum TaskType {
     Shell(ShellType),
     File(FileType),
     RunTaskline(RunTasklineType),
+    Run(String),
     Test(TestType),
 }
 
@@ -235,6 +236,11 @@ impl TaskType {
                     }
                 }
             }
+            Self::Run(taskline) => Self::RunTaskline(RunTasklineType {
+                taskline: taskline.to_owned(),
+                module: Default::default(),
+            })
+            .run(&context, dir, tasklines, worker),
             Self::RunTaskline(RunTasklineType { taskline, module }) => {
                 let module = module.render(&context, "run-taskline file")?;
                 let taskline = taskline.render(&context, "run-taskline taskline")?;
