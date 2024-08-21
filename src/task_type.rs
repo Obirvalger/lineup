@@ -3,12 +3,12 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use log::{log, LevelFilter};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
-use crate::config::config_dir;
 use crate::error::Error;
 use crate::manifest::Tasklines;
 use crate::matches::Matches;
+use crate::module;
 use crate::render::Render;
 use crate::runner::Runner;
 use crate::taskline::Taskline;
@@ -165,37 +165,14 @@ impl ShellType {
     }
 }
 
-fn deserialize_run_taskline_type_source<'de, D>(
-    deserializer: D,
-) -> Result<RunTasklineTypeSource, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let source = Option::<RunTasklineTypeSource>::deserialize(deserializer)?;
-    Ok(source.unwrap_or(RunTasklineTypeSource::default()))
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum RunTasklineTypeSource {
-    File(PathBuf),
-    Module(PathBuf),
-}
-
-impl Default for RunTasklineTypeSource {
-    fn default() -> Self {
-        RunTasklineTypeSource::File(Default::default())
-    }
-}
-
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct RunTasklineType {
     #[serde(default)]
     #[serde(alias = "tl")]
     taskline: String,
-    #[serde(flatten, deserialize_with = "deserialize_run_taskline_type_source")]
-    source: RunTasklineTypeSource,
+    #[serde(default)]
+    module: PathBuf,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -258,27 +235,18 @@ impl TaskType {
                     }
                 }
             }
-            Self::RunTaskline(RunTasklineType { taskline, source }) => {
-                let file = match source {
-                    RunTasklineTypeSource::File(file) => file.to_owned(),
-                    RunTasklineTypeSource::Module(module) => {
-                        config_dir().join("modules").join(module).with_extension("toml")
-                    }
-                };
-                let file = file.render(&context, "run-taskline file")?;
+            Self::RunTaskline(RunTasklineType { taskline, module }) => {
+                let module = module.render(&context, "run-taskline file")?;
                 let taskline = taskline.render(&context, "run-taskline taskline")?;
                 let mut dir = dir.to_owned();
                 let mut new_tasklines = tasklines.to_owned();
-                let mut taskline = if file.display().to_string().is_empty() {
+                let mut taskline = if module.display().to_string().is_empty() {
                     tasklines
                         .get(&taskline)
                         .ok_or(Error::BadTaskline(taskline.to_string(), PathBuf::from("")))?
                         .to_owned()
                 } else {
-                    let mut file = PathBuf::from(&file);
-                    if !file.is_absolute() {
-                        file = dir.join(file);
-                    }
+                    let file = module::resolve(&module, &dir);
                     Taskline::File { file, name: taskline }
                 };
 

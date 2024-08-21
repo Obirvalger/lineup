@@ -133,9 +133,8 @@ file.content = "Test"
 ## RunTaskline task
 Run a taskline from a file. Field:
 * `taskline` - Name of the taskline (default is "");
-* `file` - Path to the file containing the taskline
-    (default is the current manifest);
-* `module` - Name of a [module](modules.md) with the taskline;
+* `module` - Name of a [module](modules.md). Or path to the file containing
+    the taskline, if it starts with `/` or `.`, it is interpreted as a path.
 
 Example of a task installing `apt-repo` with `apt-get`:
 ```toml
