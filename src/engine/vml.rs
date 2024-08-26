@@ -132,7 +132,7 @@ impl EngineVml {
             options.push(user);
         }
 
-        run_cmd!($[vml] rsync-to $[options] -s $src -d $dst -n $name)?;
+        run_cmd!($[vml] rsync-to $[options] -a -s $src -d $dst -n $name)?;
 
         Ok(())
     }
