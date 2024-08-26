@@ -12,10 +12,6 @@ pub struct EngineHost {
 }
 
 impl EngineHost {
-    pub fn start<S: AsRef<str>>(&self, _name: S) -> Result<()> {
-        Ok(())
-    }
-
     pub fn copy<N: AsRef<str>, S: AsRef<Path>, D: AsRef<Path>>(
         &self,
         _name: N,

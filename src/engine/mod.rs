@@ -88,7 +88,7 @@ impl Engine {
         };
         match self {
             Engine::Docker(engine) => engine.start(name, action),
-            Engine::Host(engine) => engine.start(name),
+            Engine::Host(_engine) => Ok(()),
             Engine::Podman(engine) => engine.start(name, action),
             Engine::Vml(engine) => engine.start(name, action),
         }
