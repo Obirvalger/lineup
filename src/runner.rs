@@ -58,7 +58,11 @@ impl Runner {
                     .into_keys()
                     .map(|name| {
                         (
-                            format!("{}.{}", prefix, name),
+                            if name.is_empty() {
+                                prefix.to_string()
+                            } else {
+                                format!("{}.{}", prefix, name)
+                            },
                             Taskline::File { file: module.to_owned(), name },
                         )
                     })

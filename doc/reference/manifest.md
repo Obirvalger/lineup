@@ -24,12 +24,12 @@ To work properly with `vars` the `prefix` shoud contain only alphanumerals and
 `_`. When get default prefix from a module name, `-` will be substituted with
 `_`.
 
-Example of using a varible `update` and all tasklines from the `apt-get`
-module:
+Example of using a varible `update` and all tasklines from modules `apt-get`
+and `useradd`:
 ```toml
 [use]
 vars = [{ module = "apt-get", items = ["update"]}]
-tasklines = ["apt-get"]
+tasklines = ["apt-get", "useradd"]
 
 
 [taskset.show]
@@ -39,6 +39,10 @@ shell.stdout = { print = true }
 [taskset.install]
 run = "apt-get.install"
 vars.packages = "ncdu"
+
+[taskset.user]
+run = "useradd"
+vars.user = "user"
 ```
 
 # Vars
