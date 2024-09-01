@@ -1,9 +1,12 @@
+# Use tasklines or variables from modules or other manifests
+[use]
+tasklines = ["apt-get", "systemctl", "useradd"]
+
 # Variables used in all manifest
 [vars]
 branch = "sisyphus"
 
 
-[workers.vml-root]
 [workers.vml-root.engine.vml]
 # Vml vm name, use worker name if not set
 name = "nerdctl"
@@ -13,7 +16,6 @@ image = "alt-{{ branch }}"
 mem = "1G"
 
 # Create worker for the same vm, but with another user
-[workers.vml-user]
 [workers.vml-user.engine.vml]
 # Vml vm name, use worker name if not set
 name = "nerdctl"
@@ -25,15 +27,18 @@ setup = false
 
 # Setup nerdctl: install packages and start services
 [[tasklines.setup-nerdctl]]
-run-taskline = { module = "apt-get", taskline = "install" }
+run = "apt-get.install"
 vars.packages = ["nerdctl", "nerdctl-rootless"]
 
 [[tasklines.setup-nerdctl]]
-run-taskline = { module = "systemctl", taskline = "enable" }
+shell.cmd = "sysctl kernel.userns_restrict=0"
+
+[[tasklines.setup-nerdctl]]
+run = "systemctl.enable"
 vars.services = ["containerd"]
 
 [[tasklines.setup-nerdctl]]
-run-taskline = { module = "useradd" }
+run = "useradd"
 vars.user = "user"
 
 
@@ -45,7 +50,7 @@ shell.command = "sleep 3; nerdctl run --rm alt -- apt-get update"
 
 
 [taskset.setup-nerdctl]
-run-taskline = { taskline = "setup-nerdctl" }
+run = "setup-nerdctl"
 # Use list of regexes to limit workers to run task, [.*] is default
 workers = ["vml-root"]
 
@@ -57,12 +62,12 @@ workers = ["vml-user"]
 
 [taskset.test]
 requires = ["setup-nerdctl"]
-run-taskline = { taskline = "test" }
+run = "test"
 workers = ["vml-root"]
 
 [taskset.test-rootless]
 requires = ["setup-nerdctl-rootless"]
-run-taskline = { taskline = "test" }
+run = "test"
 workers = ["vml-user"]
 
 [taskset.version]
