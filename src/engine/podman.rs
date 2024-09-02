@@ -85,6 +85,7 @@ impl EnginePodman {
     pub fn remove<S: AsRef<str>>(&self, name: S) -> Result<()> {
         let podman = self.podman_bin.to_string();
         let name = self.n(name);
+        run_fun!($podman kill $name)?;
         run_fun!($podman rm -f $name)?;
 
         if let Some(pod) = &self.pod {
