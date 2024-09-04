@@ -77,6 +77,21 @@ impl EngineSsh {
         Ok(())
     }
 
+    pub fn get<N: AsRef<str>, S: AsRef<Path>, D: AsRef<Path>>(
+        &self,
+        _name: N,
+        src: S,
+        dst: D,
+    ) -> Result<()> {
+        let src = format!("{}:{}", self.full_host(), src.as_ref().display());
+        let dst = dst.as_ref();
+        let ssh_cmd = self.ssh_cmd().join(" ");
+
+        run_cmd!(rsync -e $ssh_cmd -a $src $dst)?;
+
+        Ok(())
+    }
+
     pub fn shell_cmd<N: AsRef<str>, S: AsRef<str>>(&self, _name: N, command: S) -> Cmd {
         let mut cmd = Cmd::from_args(self.ssh_cmd());
         cmd.arg(self.full_host());

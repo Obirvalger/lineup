@@ -116,6 +116,7 @@ There are several types of tasks:
 * [exec](#exec-task) - Run a command from an args array;
 * [shell](#shell-task) - Run a command from a shell string;
 * [file](#file-task) - Copy a file to the worker;
+* [get](#get-task) - Copy a file from the worker;
 * [run](#run-task) - Run a taskline;
 * [run-taskline](#runTaskline-task) - Run a taskline from the file;
 * [test](#test-task) - An array of commands.
@@ -165,6 +166,16 @@ Example of creating `/tmp/test-file` on the worker:
 ```toml
 file.dst = "/tmp/test-file"
 file.content = "Test"
+```
+
+## Get task
+A get task has several fields:
+* `src` - Source path on worker to get the file;
+* `dst` - Destination path on host to store the file. By default store file
+    in the same directory as manifest located with a source file name.
+Example of getting `/etc/os-release` from the worker:
+```toml
+get.src = "/etc/os-release"
 ```
 
 ## Run task

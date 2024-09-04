@@ -25,6 +25,19 @@ impl EngineHost {
         Ok(())
     }
 
+    pub fn get<N: AsRef<str>, S: AsRef<Path>, D: AsRef<Path>>(
+        &self,
+        _name: N,
+        src: S,
+        dst: D,
+    ) -> Result<()> {
+        let src = src.as_ref();
+        let dst = dst.as_ref();
+        run_cmd!(cp $src $dst)?;
+
+        Ok(())
+    }
+
     pub fn exec_cmd<N: AsRef<str>, S: AsRef<str>>(&self, _name: N, args: &[S]) -> Cmd {
         Cmd::from_args_str(args)
     }

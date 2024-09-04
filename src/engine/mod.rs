@@ -131,6 +131,21 @@ impl Engine {
         }
     }
 
+    pub fn get<N: AsRef<str>, S: AsRef<Path>, D: AsRef<Path>>(
+        &self,
+        name: N,
+        src: S,
+        dst: D,
+    ) -> Result<()> {
+        match self {
+            Engine::Docker(engine) => engine.get(name, src, dst),
+            Engine::Host(engine) => engine.get(name, src, dst),
+            Engine::Podman(engine) => engine.get(name, src, dst),
+            Engine::Ssh(engine) => engine.get(name, src, dst),
+            Engine::Vml(engine) => engine.get(name, src, dst),
+        }
+    }
+
     fn shell_cmd<N: AsRef<str>, S: AsRef<str>>(&self, name: N, command: S) -> Cmd {
         match self {
             Engine::Docker(engine) => engine.shell_cmd(name, command),

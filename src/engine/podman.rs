@@ -114,6 +114,21 @@ impl EnginePodman {
         Ok(())
     }
 
+    pub fn get<N: AsRef<str>, S: AsRef<Path>, D: AsRef<Path>>(
+        &self,
+        name: N,
+        src: S,
+        dst: D,
+    ) -> Result<()> {
+        let src = src.as_ref();
+        let dst = dst.as_ref();
+        let podman = self.podman_bin.to_string();
+        let name = self.n(name);
+        run_cmd!($podman cp $name:$src $dst)?;
+
+        Ok(())
+    }
+
     pub fn shell_cmd<N: AsRef<str>, S: AsRef<str>>(&self, name: N, command: S) -> Cmd {
         let mut cmd = Cmd::new(&self.podman_bin);
         cmd.args(["exec", "-i"]);

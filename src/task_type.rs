@@ -35,6 +35,16 @@ pub struct FileType {
     pub source: FileTypeSource,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct GetType {
+    #[serde(alias = "source")]
+    pub src: PathBuf,
+    #[serde(alias = "dest")]
+    #[serde(alias = "destination")]
+    pub dst: Option<PathBuf>,
+}
+
 fn default_cmd_output_log() -> LevelFilter {
     LevelFilter::Off
 }
@@ -206,6 +216,7 @@ pub enum TaskType {
     Exec(ExecType),
     Shell(ShellType),
     File(FileType),
+    Get(GetType),
     RunTaskline(RunTasklineType),
     Run(String),
     Test(TestType),
@@ -235,6 +246,17 @@ impl TaskType {
                         worker.copy(src, dst)
                     }
                 }
+            }
+            Self::Get(GetType { src, dst }) => {
+                let src = src.render(&context, "get task src")?;
+                let dst = if let Some(dst) = dst {
+                    dst.render(&context, "get task dst")?
+                } else {
+                    let name =
+                        src.file_name().ok_or_else(|| Error::GetSrcFilename(src.to_owned()))?;
+                    dir.join(name)
+                };
+                worker.get(src, dst)
             }
             Self::Run(taskline) => Self::RunTaskline(RunTasklineType {
                 taskline: taskline.to_owned(),

@@ -120,6 +120,12 @@ impl Worker {
         Ok(())
     }
 
+    pub fn get<S: AsRef<Path>, D: AsRef<Path>>(&self, src: S, dst: D) -> Result<()> {
+        self.engine.get(&self.name, src, dst)?;
+
+        Ok(())
+    }
+
     pub fn exec<S: AsRef<str>>(&self, args: &[S], params: &CmdParams) -> Result<()> {
         self.engine.exec(&self.name, args, params)?;
 

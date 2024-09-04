@@ -137,6 +137,28 @@ impl EngineVml {
         Ok(())
     }
 
+    pub fn get<N: AsRef<str>, S: AsRef<Path>, D: AsRef<Path>>(
+        &self,
+        name: N,
+        src: S,
+        dst: D,
+    ) -> Result<()> {
+        let src = src.as_ref();
+        let dst = dst.as_ref();
+        let vml = self.vml_cmd.to_owned();
+        let name = self.n(name);
+
+        let mut options = vec![];
+        if let Some(user) = &self.user {
+            options.push("--user");
+            options.push(user);
+        }
+
+        run_cmd!($[vml] rsync-from $[options] -a -s $src -d $dst -n $name)?;
+
+        Ok(())
+    }
+
     pub fn shell_cmd<N: AsRef<str>, S: AsRef<str>>(&self, name: N, command: S) -> Cmd {
         let mut cmd = Cmd::from_args(&self.vml_cmd);
         cmd.args(["ssh", "--check"]);
