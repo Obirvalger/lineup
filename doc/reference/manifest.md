@@ -215,6 +215,7 @@ There are several types of engines:
 * [vml](#vml-engine);
 * [docker](#docker-engine);
 * [podman](#podman-engine).
+* [ssh](#ssh-engine).
 
 ## Host engine
 Basic engine running commands just on your host.
@@ -270,6 +271,22 @@ Example of a podman worker with name `podman` and `alt` image:
 [workers.podman]
 [workers.podman.engine.podman]
 image = "alt"
+```
+
+
+## Ssh engine
+Container engine using podman.
+Ssh specific options are:
+* `host` - Ssh host;
+* `port` - Ssh port;
+* `user` - Ssh user;
+* `key` - Ssh key;
+* `ssh-cmd` - Ssh command (default to `["ssh"]`).
+
+Example of a podman worker with name `localhost`:
+```toml
+[workers.localhost.engine.ssh]
+host = "127.0.0.1"
 ```
 
 

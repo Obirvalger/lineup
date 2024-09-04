@@ -11,6 +11,7 @@ use crate::cmd::{Cmd, CmdOut};
 use crate::engine::docker::EngineDocker;
 use crate::engine::host::EngineHost;
 use crate::engine::podman::EnginePodman;
+use crate::engine::ssh::EngineSsh;
 use crate::engine::vml::EngineVml;
 use crate::error::Error;
 use crate::manifest::Engine as ManifestEngine;
@@ -21,6 +22,7 @@ mod base;
 mod docker;
 mod host;
 mod podman;
+mod ssh;
 mod vml;
 
 #[derive(Clone, Debug)]
@@ -28,6 +30,7 @@ pub enum Engine {
     Docker(EngineDocker),
     Host(EngineHost),
     Podman(EnginePodman),
+    Ssh(EngineSsh),
     Vml(EngineVml),
 }
 
@@ -65,6 +68,9 @@ impl Engine {
             ManifestEngine::Podman(manifest_engine_podman) => Engine::Podman(
                 EnginePodman::from_manifest_engine(context, manifest_engine_podman)?,
             ),
+            ManifestEngine::Ssh(manifest_engine_ssh) => {
+                Engine::Ssh(EngineSsh::from_manifest_engine(context, manifest_engine_ssh)?)
+            }
             ManifestEngine::Vml(manifest_engine_vml) => {
                 Engine::Vml(EngineVml::from_manifest_engine(context, manifest_engine_vml)?)
             }
@@ -78,6 +84,7 @@ impl Engine {
             Engine::Docker(engine) => &engine.base,
             Engine::Host(engine) => &engine.base,
             Engine::Podman(engine) => &engine.base,
+            Engine::Ssh(engine) => &engine.base,
             Engine::Vml(engine) => &engine.base,
         }
     }
@@ -90,6 +97,7 @@ impl Engine {
             Engine::Docker(engine) => engine.start(name, action),
             Engine::Host(_engine) => Ok(()),
             Engine::Podman(engine) => engine.start(name, action),
+            Engine::Ssh(_engine) => Ok(()),
             Engine::Vml(engine) => engine.start(name, action),
         }
     }
@@ -103,6 +111,7 @@ impl Engine {
             Engine::Docker(engine) => engine.remove(name),
             Engine::Host(_engine) => Ok(()),
             Engine::Podman(engine) => engine.remove(name),
+            Engine::Ssh(_engine) => Ok(()),
             Engine::Vml(engine) => engine.remove(name),
         }
     }
@@ -117,6 +126,7 @@ impl Engine {
             Engine::Docker(engine) => engine.copy(name, src, dst),
             Engine::Host(engine) => engine.copy(name, src, dst),
             Engine::Podman(engine) => engine.copy(name, src, dst),
+            Engine::Ssh(engine) => engine.copy(name, src, dst),
             Engine::Vml(engine) => engine.copy(name, src, dst),
         }
     }
@@ -126,6 +136,7 @@ impl Engine {
             Engine::Docker(engine) => engine.shell_cmd(name, command),
             Engine::Host(engine) => engine.shell_cmd(name, command),
             Engine::Podman(engine) => engine.shell_cmd(name, command),
+            Engine::Ssh(engine) => engine.shell_cmd(name, command),
             Engine::Vml(engine) => engine.shell_cmd(name, command),
         }
     }
@@ -189,6 +200,7 @@ impl Engine {
             Engine::Docker(engine) => engine.shell_cmd(name, &command),
             Engine::Host(engine) => engine.exec_cmd(name, args),
             Engine::Podman(engine) => engine.shell_cmd(name, &command),
+            Engine::Ssh(engine) => engine.shell_cmd(name, &command),
             Engine::Vml(engine) => engine.shell_cmd(name, &command),
         };
 

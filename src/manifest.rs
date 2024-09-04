@@ -119,6 +119,34 @@ impl Render for EngineVml {
     }
 }
 
+fn default_engine_ssh_ssh_cmd() -> Vec<String> {
+    vec!["ssh".to_string()]
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
+pub struct EngineSsh {
+    pub host: String,
+    pub port: Option<String>,
+    pub user: Option<String>,
+    pub key: Option<String>,
+    #[serde(alias = "ssh_cmd")]
+    #[serde(default = "default_engine_ssh_ssh_cmd")]
+    pub ssh_cmd: Vec<String>,
+}
+
+impl Render for EngineSsh {
+    fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
+        let place = format!("ssh engine in {}", place.as_ref());
+        let host = self.host.render(context, format!("host in {}", place))?;
+        let port = self.port.render(context, format!("port in {}", place))?;
+        let user = self.user.render(context, format!("user in {}", place))?;
+        let key = self.key.render(context, format!("key in {}", place))?;
+        Ok(Self { host, port, user, key, ..self.to_owned() })
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 #[serde(deny_unknown_fields)]
@@ -177,6 +205,7 @@ impl Render for EnginePodman {
 #[serde(rename_all = "kebab-case")]
 pub enum Engine {
     Vml(EngineVml),
+    Ssh(EngineSsh),
     Docker(EngineDocker),
     Podman(EnginePodman),
     Host,
