@@ -222,38 +222,12 @@ Most engines have base fields:
     `fail`, `ignore` and `replace`.
 
 There are several types of engines:
-* [host](#host-engine);
-* [vml](#vml-engine);
 * [docker](#docker-engine);
+* [host](#host-engine);
 * [podman](#podman-engine).
 * [ssh](#ssh-engine).
+* [vml](#vml-engine);
 
-## Host engine
-Basic engine running commands just on your host.
-Example of host worker with name `host`:
-```toml
-[workers.host]
-engine = "host"
-```
-
-## Vml engine
-Virtual machine engine using vml.
-Vml specific options are:
-* `vml-bin` - Path to vml binary;
-* `memory` - Amount of memory;
-* `image` - Image;
-* `net` - Describe network;
-* `nproc` - Number of processes;
-* `parent` - Create vm with specific parent;
-* `user` - User.
-
-Example of vml a worker with name `vm`, `alt` image and 2 gigabytes of memory:
-```toml
-[workers.vm]
-[workers.vm.engine.vml]
-image = "alt"
-mem = "2G"
-```
 
 ## Docker engine
 Container engine using docker.
@@ -268,6 +242,16 @@ Example of a docker worker with name `docker` and `alt` image:
 [workers.docker.engine.docker]
 image = "alt"
 ```
+
+
+## Host engine
+Basic engine running commands just on your host.
+Example of host worker with name `host`:
+```toml
+[workers.host]
+engine = "host"
+```
+
 
 ## Podman engine
 Container engine using podman.
@@ -298,6 +282,26 @@ Example of a podman worker with name `localhost`:
 ```toml
 [workers.localhost.engine.ssh]
 host = "127.0.0.1"
+```
+
+
+## Vml engine
+Virtual machine engine using vml.
+Vml specific options are:
+* `vml-bin` - Path to vml binary;
+* `memory` - Amount of memory;
+* `image` - Image;
+* `net` - Describe network;
+* `nproc` - Number of processes;
+* `parent` - Create vm with specific parent;
+* `user` - User.
+
+Example of vml a worker with name `vm`, `alt` image and 2 gigabytes of memory:
+```toml
+[workers.vm]
+[workers.vm.engine.vml]
+image = "alt"
+mem = "2G"
 ```
 
 
