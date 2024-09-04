@@ -39,7 +39,7 @@ pub struct Cli {
     #[arg(long, short, required = false)]
     pub extra_vars: Vec<String>,
 
-    #[arg(long, required = false, help = "Don not run this tasks from taskset")]
+    #[arg(long, required = false, num_args = 1.., help = "Don not run this tasks from taskset")]
     pub skip_tasks: Vec<String>,
 
     #[command(subcommand)]
