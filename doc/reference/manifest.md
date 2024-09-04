@@ -222,11 +222,25 @@ Most engines have base fields:
     `fail`, `ignore` and `replace`.
 
 There are several types of engines:
+* [dbg](#dbg-engine);
 * [docker](#docker-engine);
 * [host](#host-engine);
 * [podman](#podman-engine).
 * [ssh](#ssh-engine).
 * [vml](#vml-engine);
+
+
+## Dbg engine
+Engine used to debug tasks. Just print information about runnig tasks.
+Could be setting any keys, all are ignored.
+
+Example of debugging `vm` worker with `vml` keys:
+```toml
+#[workers.vm.engine.vml]
+[workers.vm.engine.dbg]
+image = "alt"
+mem = "4G"
+```
 
 
 ## Docker engine

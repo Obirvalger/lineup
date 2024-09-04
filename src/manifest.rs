@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use serde_json::value::Value;
 
 use crate::engine::{EngineBase, ExistsAction};
 use crate::items::Items;
@@ -209,6 +210,8 @@ pub enum Engine {
     Docker(EngineDocker),
     Podman(EnginePodman),
     Host,
+    // Store any keys to ignore them
+    Dbg(BTreeMap<String, Value>),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

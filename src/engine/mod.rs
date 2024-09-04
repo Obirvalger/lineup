@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub use crate::engine::base::EngineBase;
 
 use crate::cmd::{Cmd, CmdOut};
+use crate::engine::dbg::EngineDbg;
 use crate::engine::docker::EngineDocker;
 use crate::engine::host::EngineHost;
 use crate::engine::podman::EnginePodman;
@@ -19,6 +20,7 @@ use crate::task_type::CmdParams;
 use crate::template::Context;
 
 mod base;
+mod dbg;
 mod docker;
 mod host;
 mod podman;
@@ -27,6 +29,7 @@ mod vml;
 
 #[derive(Clone, Debug)]
 pub enum Engine {
+    Dbg(EngineDbg),
     Docker(EngineDocker),
     Host(EngineHost),
     Podman(EnginePodman),
@@ -61,6 +64,7 @@ impl Engine {
         manifest_engine: &ManifestEngine,
     ) -> Result<Engine> {
         let engine = match manifest_engine {
+            ManifestEngine::Dbg(_) => Engine::Dbg(EngineDbg { base: EngineBase::default() }),
             ManifestEngine::Docker(manifest_engine_docker) => Engine::Docker(
                 EngineDocker::from_manifest_engine(context, manifest_engine_docker)?,
             ),
@@ -81,6 +85,7 @@ impl Engine {
 
     pub fn base(&self) -> &EngineBase {
         match self {
+            Engine::Dbg(engine) => &engine.base,
             Engine::Docker(engine) => &engine.base,
             Engine::Host(engine) => &engine.base,
             Engine::Podman(engine) => &engine.base,
@@ -94,6 +99,7 @@ impl Engine {
             return Ok(());
         };
         match self {
+            Engine::Dbg(_engine) => Ok(()),
             Engine::Docker(engine) => engine.start(name, action),
             Engine::Host(_engine) => Ok(()),
             Engine::Podman(engine) => engine.start(name, action),
@@ -108,6 +114,7 @@ impl Engine {
         };
 
         match self {
+            Engine::Dbg(_engine) => Ok(()),
             Engine::Docker(engine) => engine.remove(name),
             Engine::Host(_engine) => Ok(()),
             Engine::Podman(engine) => engine.remove(name),
@@ -123,6 +130,7 @@ impl Engine {
         dst: D,
     ) -> Result<()> {
         match self {
+            Engine::Dbg(engine) => engine.copy(name, src, dst),
             Engine::Docker(engine) => engine.copy(name, src, dst),
             Engine::Host(engine) => engine.copy(name, src, dst),
             Engine::Podman(engine) => engine.copy(name, src, dst),
@@ -138,6 +146,7 @@ impl Engine {
         dst: D,
     ) -> Result<()> {
         match self {
+            Engine::Dbg(engine) => engine.get(name, src, dst),
             Engine::Docker(engine) => engine.get(name, src, dst),
             Engine::Host(engine) => engine.get(name, src, dst),
             Engine::Podman(engine) => engine.get(name, src, dst),
@@ -148,6 +157,7 @@ impl Engine {
 
     fn shell_cmd<N: AsRef<str>, S: AsRef<str>>(&self, name: N, command: S) -> Cmd {
         match self {
+            Engine::Dbg(engine) => engine.shell_cmd(name, command),
             Engine::Docker(engine) => engine.shell_cmd(name, command),
             Engine::Host(engine) => engine.shell_cmd(name, command),
             Engine::Podman(engine) => engine.shell_cmd(name, command),
@@ -212,6 +222,7 @@ impl Engine {
     ) -> Result<()> {
         let command = quote_args(args)?;
         let cmd = match self {
+            Engine::Dbg(engine) => engine.exec_cmd(name, args),
             Engine::Docker(engine) => engine.shell_cmd(name, &command),
             Engine::Host(engine) => engine.exec_cmd(name, args),
             Engine::Podman(engine) => engine.shell_cmd(name, &command),
