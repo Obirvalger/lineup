@@ -260,7 +260,7 @@ image = "alt"
 
 ## Podman engine
 Container engine using podman.
-Docker specific options are:
+Podman specific options are:
 * `memory` - Amount of memory;
 * `image` - Image;
 * `pod` - Pod;
