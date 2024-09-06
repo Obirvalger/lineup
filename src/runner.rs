@@ -32,12 +32,16 @@ pub struct Runner {
 }
 
 impl Runner {
-    fn get_use_tasklines(dir: &Path, use_units: &[UseUnit]) -> Result<Tasklines> {
+    fn get_use_tasklines(
+        context: &Context,
+        dir: &Path,
+        use_units: &[UseUnit],
+    ) -> Result<Tasklines> {
         let mut tasklines = BTreeMap::new();
 
         for use_unit in use_units {
             let module = module::resolve(&use_unit.module, dir);
-            let manifest = Self::from_manifest(&module)?;
+            let manifest = Self::from_manifest(&module, context)?;
             let mut use_tasklines = manifest.tasklines;
 
             if !use_unit.items.is_empty() {
@@ -75,12 +79,12 @@ impl Runner {
         Ok(tasklines)
     }
 
-    fn get_use_vars(dir: &Path, use_units: &[UseUnit]) -> Result<Vars> {
+    fn get_use_vars(context: &Context, dir: &Path, use_units: &[UseUnit]) -> Result<Vars> {
         let mut vars = Vars::new(BTreeMap::new());
 
         for use_unit in use_units {
             let module = module::resolve(&use_unit.module, dir);
-            let mut use_vars = Self::from_manifest(&module)?.vars.into_map();
+            let mut use_vars = Self::from_manifest(&module, context)?.vars.into_map();
 
             if !use_unit.items.is_empty() {
                 use_vars.retain(|k, _| use_unit.items.contains(k));
@@ -112,7 +116,7 @@ impl Runner {
         Ok(vars)
     }
 
-    pub fn from_manifest<S: AsRef<OsStr>>(manifest_path: S) -> Result<Self> {
+    pub fn from_manifest<S: AsRef<OsStr>>(manifest_path: S, context: &Context) -> Result<Self> {
         let manifest_path = Path::new(manifest_path.as_ref());
         let dir = manifest_path
             .parent()
@@ -122,12 +126,22 @@ impl Runner {
             .with_context(|| format!("Failed to read manifest `{}`", &manifest_path.display()))?;
         let manifest: Manifest = toml::from_str(&manifest_str)
             .with_context(|| format!("Failed to parse manifest `{}`", &manifest_path.display()))?;
+
         let defaults = &manifest.default;
-        let mut vars = Self::get_use_vars(&dir, &manifest.use_.vars)?;
-        vars.extend(manifest.vars.to_owned());
+
+        let mut context = context.to_owned();
+        let mut vars = Self::get_use_vars(&context, &dir, &manifest.use_.vars)?;
+        let mut new_context = vars.context()?;
+        new_context.extend(context);
+        context = new_context;
+        vars.extend(manifest.vars.to_owned().render(&context, "runner from_manifest")?);
+        new_context = vars.context()?;
+        new_context.extend(context);
+        context = new_context;
+
         let taskset = manifest.taskset.to_owned();
 
-        let mut tasklines = Self::get_use_tasklines(&dir, &manifest.use_.tasklines)?;
+        let mut tasklines = Self::get_use_tasklines(&context, &dir, &manifest.use_.tasklines)?;
         let mut manifest_tasklines = manifest.tasklines.to_owned();
         if !manifest.taskline.is_empty() {
             manifest_tasklines
@@ -146,12 +160,6 @@ impl Runner {
 
     pub fn add_extra_vars(&mut self, vars: Vars) {
         self.vars.extend(vars);
-    }
-
-    pub fn render_vars(&mut self, context: &Context) -> Result<()> {
-        self.vars = self.vars.render(context, "manifest")?;
-
-        Ok(())
     }
 
     pub fn skip_tasks(&mut self, tasks: &[String]) {

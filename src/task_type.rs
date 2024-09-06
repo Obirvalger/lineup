@@ -329,7 +329,7 @@ impl TaskType {
                 while !taskline.is_line() {
                     match &taskline {
                         Taskline::File { file, name } => {
-                            let runner = Runner::from_manifest(file)?;
+                            let runner = Runner::from_manifest(file, &context)?;
                             runner.dir.clone_into(&mut dir);
                             runner.tasklines.clone_into(&mut new_tasklines);
                             let mut new_context = runner.vars.context()?;

@@ -85,10 +85,10 @@ fn inner_main() -> Result<()> {
         let manifest = &args.manifest;
 
         thread_pool.install(|| -> Result<()> {
-            let mut runner = Runner::from_manifest(manifest)?;
-            runner.set_worker_exists_action(args.worker_exists);
             let extra_vars = parse_extra_vars(&args.extra_vars)?;
-            runner.render_vars(&extra_vars.context()?)?;
+            let mut runner = Runner::from_manifest(manifest, &extra_vars.context()?)?;
+            runner.set_worker_exists_action(args.worker_exists);
+            // Do after initializing to overwrite vars from manifest
             runner.add_extra_vars(extra_vars);
             runner.skip_tasks(&args.skip_tasks);
             runner.run()?;
