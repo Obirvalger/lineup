@@ -1,7 +1,13 @@
 [[tasklines.add]]
+ensure.vars = ["task"]
+
+[[tasklines.add]]
 name = "Add task {{ task }}"
 exec.args = ["apt-repo", "add", "{{ task }}"]
 
+
+[[tasklines.rm]]
+ensure.vars = ["task"]
 
 [[tasklines.rm]]
 name = "Remove task {{ task }}"

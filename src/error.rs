@@ -20,6 +20,8 @@ pub enum Error {
     CommandFailedFailureMatches(String),
     #[error("command `{0}` failed: don't match success matches")]
     CommandFailedSuccsessMatches(String),
+    #[error("variables `{0}` are not set for taskline `{1}`")]
+    EnsureAbsentVars(String, String),
     #[error("get task's src `{0}` has no filename")]
     GetSrcFilename(PathBuf),
     #[error("no engine provided to worker `{0}`")]

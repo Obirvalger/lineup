@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
-use log::{log, LevelFilter};
+use anyhow::{bail, Result};
+use log::{log, warn, LevelFilter};
 use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
@@ -15,6 +15,50 @@ use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::tmpdir::tmpfile;
 use crate::worker::Worker;
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct EnsureType {
+    #[serde(default)]
+    pub vars: Vec<String>,
+}
+
+impl EnsureType {
+    fn ensure_vars(&self, context: &Context) -> Result<()> {
+        let mut absent_vars = vec![];
+
+        'vars: for var in &self.vars {
+            let mut value = context.to_owned().into_json();
+            for part in var.split('.') {
+                match value.get(part) {
+                    Some(new_value) => value = new_value.to_owned(),
+                    None => {
+                        absent_vars.push(var.to_string());
+                        continue 'vars;
+                    }
+                }
+            }
+        }
+
+        if !absent_vars.is_empty() {
+            let mut taskline = "".to_string();
+            if let Some(taskline_str) = context.get("taskline").and_then(|t| t.as_str()) {
+                taskline = taskline_str.to_string();
+            } else {
+                warn!("taskline absent in context for EnsureType");
+            }
+            bail!(Error::EnsureAbsentVars(absent_vars.join(" "), taskline))
+        }
+
+        Ok(())
+    }
+
+    pub fn ensure(&self, context: &Context) -> Result<()> {
+        self.ensure_vars(context)?;
+
+        Ok(())
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -213,6 +257,7 @@ pub struct TestType {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TaskType {
+    Ensure(EnsureType),
     Exec(ExecType),
     Shell(ShellType),
     File(FileType),
@@ -232,6 +277,7 @@ impl TaskType {
     ) -> Result<()> {
         let mut context = context.to_owned();
         match self {
+            Self::Ensure(ensure) => ensure.ensure(&context),
             Self::Exec(exec) => exec.run(&context, worker),
             Self::Shell(shell) => shell.run(&context, worker),
             Self::File(FileType { dst, source }) => {
@@ -265,17 +311,19 @@ impl TaskType {
             .run(&context, dir, tasklines, worker),
             Self::RunTaskline(RunTasklineType { taskline, module }) => {
                 let module = module.render(&context, "run-taskline file")?;
-                let taskline = taskline.render(&context, "run-taskline taskline")?;
+                let taskline_name = taskline.render(&context, "run-taskline taskline")?;
+                let mut taskline_file = "".to_string();
                 let mut dir = dir.to_owned();
                 let mut new_tasklines = tasklines.to_owned();
                 let mut taskline = if module.display().to_string().is_empty() {
                     tasklines
-                        .get(&taskline)
+                        .get(&taskline_name)
                         .ok_or(Error::BadTaskline(taskline.to_string(), PathBuf::from("")))?
                         .to_owned()
                 } else {
                     let file = module::resolve(&module, &dir);
-                    Taskline::File { file, name: taskline }
+                    taskline_file = file.display().to_string();
+                    Taskline::File { file, name: taskline_name.to_string() }
                 };
 
                 while !taskline.is_line() {
@@ -297,6 +345,15 @@ impl TaskType {
                     }
                 }
 
+                let taskline_str = if taskline_file.is_empty() {
+                    taskline_name
+                } else if taskline_name.is_empty() {
+                    taskline_file
+                } else {
+                    format!("{}:{}", taskline_file, taskline_name)
+                };
+                context.insert("taskline", &taskline_str);
+
                 for task in taskline.as_line().expect("get not line variant of taskline") {
                     task.task.run(&task.name, &context, &dir, &new_tasklines, worker)?;
                 }
@@ -311,5 +368,86 @@ impl TaskType {
                 Ok(())
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use serde_json::Value;
+
+    fn context() -> Context {
+        let mut context = Context::new();
+        context.insert("user", "user");
+        context.insert("packages", &["apt-repo"]);
+        let vars: Value = serde_json::from_str(r#"{"one": 1}"#).unwrap();
+        context.insert("vars", &vars);
+        let out: Value = serde_json::from_str(r#"{"in": {"one": 1}}"#).unwrap();
+        context.insert("out", &out);
+
+        context
+    }
+
+    #[test]
+    fn empty_ensure_vars_empty_context() -> Result<()> {
+        let mut ensure = EnsureType::default();
+        ensure.vars = Default::default();
+        ensure.ensure_vars(&Context::new())
+    }
+
+    #[test]
+    fn empty_ensure_vars() -> Result<()> {
+        let mut ensure = EnsureType::default();
+        ensure.vars = Default::default();
+        ensure.ensure_vars(&context())
+    }
+
+    #[test]
+    fn non_nested_ensure_vars() -> Result<()> {
+        let mut ensure = EnsureType::default();
+        ensure.vars = vec!["user".to_string(), "packages".to_string()];
+        ensure.ensure_vars(&context())
+    }
+
+    #[test]
+    fn non_nested_ensure_vars_absent() -> Result<()> {
+        let mut ensure = EnsureType::default();
+        ensure.vars = vec!["target".to_string()];
+        assert!(ensure.ensure_vars(&context()).is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn nested_ensure_vars() -> Result<()> {
+        let mut ensure = EnsureType::default();
+        ensure.vars = vec!["vars.one".to_string(), "out.in.one".to_string()];
+        ensure.ensure_vars(&context())
+    }
+
+    #[test]
+    fn nested_ensure_vars_absent() -> Result<()> {
+        let mut ensure = EnsureType::default();
+        ensure.vars = vec!["out.in.two".to_string()];
+        assert!(ensure.ensure_vars(&context()).is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn top_level_ensure_vars() -> Result<()> {
+        let mut ensure = EnsureType::default();
+        ensure.vars = vec!["vars".to_string(), "out.in".to_string()];
+        ensure.ensure_vars(&context())
+    }
+
+    #[test]
+    fn top_level_ensure_vars_absent() -> Result<()> {
+        let mut ensure = EnsureType::default();
+        ensure.vars = vec!["out.vars".to_string()];
+        assert!(ensure.ensure_vars(&context()).is_err());
+
+        Ok(())
     }
 }

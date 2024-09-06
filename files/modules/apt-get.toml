@@ -17,6 +17,9 @@ shell.command = "apt-get dist-upgrade -y"
 
 
 [[tasklines.install]]
+ensure.vars = ["packages"]
+
+[[tasklines.install]]
 run-taskline = { taskline = "update" }
 if = "{{ update }}"
 
@@ -26,6 +29,9 @@ shell.command = "apt-get install -y {{ packages | quote }}"
 
 
 [[tasklines.reinstall]]
+ensure.vars = ["packages"]
+
+[[tasklines.reinstall]]
 run-taskline = { taskline = "update" }
 if = "{{ update }}"
 
@@ -33,6 +39,9 @@ if = "{{ update }}"
 name = "Reinstall packages {{ packages }}"
 shell.command = "apt-get reinstall -y {{ packages | quote }}"
 
+
+[[tasklines.remove]]
+ensure.vars = ["packages"]
 
 [[tasklines.remove]]
 name = "Remove packages {{ packages }}"

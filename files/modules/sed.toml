@@ -1,4 +1,7 @@
 [[taskline]]
+ensure.vars = ["file", "expression"]
+
+[[taskline]]
 name = "Sed file {{ file }} with expression {{ expression }}"
 exec.args = ["sed", "-E", "-e", "{{ expression }}", "-i", "{{ file }}"]
 

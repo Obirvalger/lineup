@@ -21,6 +21,9 @@ shell.command = "cat ~root/.ssh/authorized_keys >> ~{{ user }}/.ssh/authorized_k
 
 
 [[taskline]]
+ensure.vars = ["user"]
+
+[[taskline]]
 name = "Add user \"{{ user }}\""
 exec.args = ["useradd", "-m", "{{ user }}"]
 exec.check = false

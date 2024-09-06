@@ -119,6 +119,7 @@ There are several types of tasks:
 * [get](#get-task) - Copy a file from the worker;
 * [run](#run-task) - Run a taskline;
 * [run-taskline](#runTaskline-task) - Run a taskline from the file;
+* [ensure](#ensure-task) - Ensure taskline could be run;
 * [test](#test-task) - An array of commands.
 
 ## Command output
@@ -202,6 +203,13 @@ Example of a task installing `apt-repo` with `apt-get`:
 ```toml
 run-taskline = { module = "apt-get", taskline = "install" }
 vars.packages = [ "apt-repo" ]
+```
+
+## Ensure task
+It has field `vars` with an array of variable names. Check them to be set.
+Example of ensuring two vairable `user` and `vars.lil` are set:
+```toml
+ensure.vars = ["user", "vars.lil"]
 ```
 
 ## Test task

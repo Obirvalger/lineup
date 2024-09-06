@@ -3,9 +3,15 @@ now = true
 
 
 [[tasklines.enable]]
+ensure.vars = ["services"]
+
+[[tasklines.enable]]
 name = "Enable services {{ services }}"
 shell.command = "systemctl enable {{ now | cond(if='--now') }} {{ services | quote }}"
 
+
+[[tasklines.disable]]
+ensure.vars = ["services"]
 
 [[tasklines.disable]]
 name = "Disable services {{ services }}"
@@ -13,9 +19,15 @@ shell.command = "systemctl disable {{ now | cond(if='--now') }} {{ services | qu
 
 
 [[tasklines.start]]
+ensure.vars = ["services"]
+
+[[tasklines.start]]
 name = "Start services {{ services }}"
 shell.command = "systemctl start {{ services | quote }}"
 
+
+[[tasklines.stop]]
+ensure.vars = ["services"]
 
 [[tasklines.stop]]
 name = "Disable services {{ services }}"
