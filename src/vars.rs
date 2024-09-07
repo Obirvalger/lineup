@@ -14,25 +14,6 @@ pub struct Vars {
     map: BTreeMap<String, Value>,
 }
 
-fn render_value<S: AsRef<str>>(value: &mut Value, context: &Context, place: S) -> Result<()> {
-    match value {
-        Value::String(s) => *s = s.render(context, format!("variables in {}", place.as_ref()))?,
-        Value::Object(m) => {
-            for (_, v) in m.iter_mut() {
-                render_value(v, context, place.as_ref())?;
-            }
-        }
-        Value::Array(a) => {
-            for v in a.iter_mut() {
-                render_value(v, context, place.as_ref())?;
-            }
-        }
-        _ => {}
-    }
-
-    Ok(())
-}
-
 impl Vars {
     pub fn new(map: BTreeMap<String, Value>) -> Self {
         Self { map }
@@ -57,9 +38,10 @@ impl Render for Vars {
     fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
         let mut new_map = BTreeMap::new();
         for (name, value) in &self.map {
-            let mut value = value.to_owned();
-            render_value(&mut value, context, place.as_ref())?;
-            new_map.insert(name.to_string(), value);
+            new_map.insert(
+                name.to_string(),
+                value.render(context, format!("variables in {}", place.as_ref()))?,
+            );
         }
 
         Ok(Self::new(new_map))
