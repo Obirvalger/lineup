@@ -234,8 +234,8 @@ There are several types of engines:
 * [docker](#docker-engine);
 * [host](#host-engine);
 * [podman](#podman-engine).
-* [ssh](#ssh-engine).
-* [vml](#vml-engine);
+* [ssh](#ssh-engine);
+* [vml](#vml-engine).
 
 
 ## Dbg engine
