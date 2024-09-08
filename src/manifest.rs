@@ -14,7 +14,7 @@ use crate::task_type::TaskType;
 use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::use_unit::UseUnit;
-use crate::vars::Vars;
+use crate::vars::{Vars, Maps};
 
 pub type Workers = BTreeMap<String, Worker>;
 pub type Tasklines = BTreeMap<String, Taskline>;
@@ -270,9 +270,23 @@ fn default_taskset() -> Taskset {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
+pub struct ExtendVars {
+    pub maps: Maps,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct Extend {
+    pub vars: ExtendVars,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct Manifest {
     #[serde(default)]
     pub vars: Vars,
+    #[serde(default)]
+    pub extend: Extend,
     #[serde(default)]
     #[serde(rename = "use")]
     pub use_: Use,

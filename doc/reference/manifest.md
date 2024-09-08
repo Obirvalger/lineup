@@ -7,7 +7,8 @@ Lineup manifest consists of several sections, most of which are optional.
 * [workers](#Workers) - Define workers;
 * [default](#Default) - Overwrite defaults;
 * [tasklines](#Tasklines) - Define tasklines;
-* [taskset](#Taskset) Define taskset.
+* [taskset](#Taskset) Define taskset;
+* [extend](#Extend) Extend some other sections.
 
 
 # Use
@@ -364,4 +365,22 @@ shell.cmd = "echo {{ item }}"
 shell.stdout = { print = true }
 items = { start = 1, end = 6, step = 2 }
 parallel = false
+```
+
+
+# Extend
+This section provides additional functionality to some other sections.
+Consists of:
+* [vars](#extend-vars).
+
+## Extend vars
+Field `maps` gets a list of tables containing variables. Every element of the
+list can use previous variables in templates. Example of setting a variable
+`target` and a `path` variable, which uses `target`:
+```toml
+[extend]
+vars.maps = [
+    { target = "debug" },
+    { path = "target/{{ target }}/lineup" },
+]
 ```

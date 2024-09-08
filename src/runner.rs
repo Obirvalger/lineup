@@ -129,15 +129,19 @@ impl Runner {
 
         let defaults = &manifest.default;
 
+        let place = "Runner::from_manifest";
         let mut context = context.to_owned();
         let mut vars = Self::get_use_vars(&context, &dir, &manifest.use_.vars)?;
         let mut new_context = vars.context()?;
         new_context.extend(context);
         context = new_context;
-        vars.extend(manifest.vars.to_owned().render(&context, "runner from_manifest")?);
+        vars.extend(manifest.vars.to_owned().render(&context, place)?);
         new_context = vars.context()?;
         new_context.extend(context);
         context = new_context;
+        let maps_vars = manifest.extend.vars.maps.render(&context, place)?.vars()?;
+        vars.extend(maps_vars);
+        context.extend(vars.context()?);
 
         let taskset = manifest.taskset.to_owned();
 
