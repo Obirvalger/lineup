@@ -20,11 +20,11 @@ Add items from other files to the main manifest. It has two subsections -
 * `items` - Array of names of items used from module. By default use all items.
 
 For short just module name could be used instead of a table.
-To work properly with `vars` the `prefix` shoud contain only alphanumerals and
-`_`. When get default prefix from a module name, `-` will be substituted with
-`_`.
+To work properly with `vars` the `prefix` should contain only alphanumerals
+and `_`. When get default prefix from a module name, `-` will be substituted
+with `_`.
 
-Example of using a varible `update` and all tasklines from modules `apt-get`
+Example of using a variable `update` and all tasklines from modules `apt-get`
 and `useradd`:
 ```toml
 [use]
@@ -207,7 +207,7 @@ vars.packages = [ "apt-repo" ]
 
 ## Ensure task
 It has field `vars` with an array of variable names. Check them to be set.
-Example of ensuring two vairable `user` and `vars.lil` are set:
+Example of ensuring two variable `user` and `vars.lil` are set:
 ```toml
 ensure.vars = ["user", "vars.lil"]
 ```
@@ -239,7 +239,7 @@ There are several types of engines:
 
 
 ## Dbg engine
-Engine used to debug tasks. Just print information about runnig tasks.
+Engine used to debug tasks. Just print information about running tasks.
 Could be setting any keys, all are ignored.
 
 Example of debugging `vm` worker with `vml` keys:
