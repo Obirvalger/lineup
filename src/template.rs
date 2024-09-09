@@ -8,7 +8,7 @@ use anyhow::Result;
 use cmd_lib::run_fun;
 use inquire::Confirm;
 use lazy_static::lazy_static;
-use serde_json::value::Value;
+use serde_json::value::{to_value, Value};
 use tera::Tera;
 
 use crate::cmd::Cmd;
@@ -53,6 +53,16 @@ fn dirname(value: &Value, _args: &HashMap<String, Value>) -> tera::Result<Value>
                 .unwrap_or_else(|| value.to_string());
             Ok(Value::String(new_value))
         }
+        _ => Err(error_not_support.into()),
+    }
+}
+
+fn is_empty(value: &Value, _: &HashMap<String, Value>) -> tera::Result<Value> {
+    let error_not_support = "Value of not supported type";
+    match value {
+        Value::Array(a) => Ok(to_value(a.is_empty()).unwrap()),
+        Value::Object(m) => Ok(to_value(m.is_empty()).unwrap()),
+        Value::String(s) => Ok(to_value(s.is_empty()).unwrap()),
         _ => Err(error_not_support.into()),
     }
 }
@@ -233,6 +243,7 @@ pub fn render<S: ToString, P: AsRef<str>>(
             tera.register_filter("basename", basename);
             tera.register_filter("cond", cond);
             tera.register_filter("dirname", dirname);
+            tera.register_filter("is_empty", is_empty);
             tera.register_filter("quote", quote);
 
             tera.register_function("confirm", confirm);
