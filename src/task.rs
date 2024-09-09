@@ -12,7 +12,7 @@ use crate::render::Render;
 use crate::table::Table;
 use crate::task_type::{CmdParams, TaskType};
 use crate::template::Context;
-use crate::vars::Vars;
+use crate::vars::ExtVars;
 use crate::worker::Worker;
 
 fn default_task_items_table_items_var() -> String {
@@ -45,7 +45,7 @@ pub struct Task {
     #[serde(default = "default_task_parallel")]
     pub parallel: bool,
     #[serde(default)]
-    pub vars: Vars,
+    pub vars: ExtVars,
     #[serde(flatten)]
     pub items_table: Option<TaskItemsTable>,
     #[serde(flatten)]
@@ -63,7 +63,7 @@ impl Task {
     ) -> Result<()> {
         let task_vars = self.vars.render(context, "task")?;
         let mut context = if self.clean_vars { Context::default() } else { context.to_owned() };
-        context.extend(task_vars.context()?);
+        context.extend(task_vars.vars()?.context()?);
 
         let items = self
             .items_table

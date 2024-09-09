@@ -108,7 +108,7 @@ Tasks are defined by a [task type](#task-types) and have some parameters:
     The task does not run if this fails;
 * `parallel` - A bool controlling whether to run items tasks in parallel;
     [items](#Items) tasks should be executed in parallel;
-* `vars` - Set variables as in the [vars](#Vars) section;
+* [vars](#task-vars) - Set variables;
 * `clean-vars` - If true, run task without previously defined variables;
 * `table` - Table.
 
@@ -222,6 +222,20 @@ test.commands = [
     { cmd = "echo lal >&2", stderr = { print = true } },
 ]
 ```
+
+## Task vars
+It is a table as in [vars](#Vars) or a list of tables as in
+[extend vars](#extend-vars). Example of creating a shell task in a taskline
+and setting a variable `target` and a `path` variable, which uses `target`:
+```toml
+[[taskline]]
+shell.cmd = "ls -l {{ path }}"
+vars = [
+    { target = "debug" },
+    { path = "target/{{ target }}/lineup" },
+]
+```
+
 
 # Engine
 Most engines have base fields:
