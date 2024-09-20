@@ -9,6 +9,7 @@ use cmd_lib::run_fun;
 use inquire::Confirm;
 use lazy_static::lazy_static;
 use serde_json::value::{to_value, Value};
+use serde_json::{to_string, to_string_pretty};
 use tera::Tera;
 
 use crate::cmd::Cmd;
@@ -64,6 +65,16 @@ fn is_empty(value: &Value, _: &HashMap<String, Value>) -> tera::Result<Value> {
         Value::Object(m) => Ok(to_value(m.is_empty()).unwrap()),
         Value::String(s) => Ok(to_value(s.is_empty()).unwrap()),
         _ => Err(error_not_support.into()),
+    }
+}
+
+pub fn json_encode(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
+    let pretty = args.get("pretty").and_then(Value::as_bool).unwrap_or(false);
+
+    if pretty {
+        to_string_pretty(&value).map(Value::String).map_err(tera::Error::json)
+    } else {
+        to_string(&value).map(Value::String).map_err(tera::Error::json)
     }
 }
 
@@ -244,6 +255,9 @@ pub fn render<S: ToString, P: AsRef<str>>(
             tera.register_filter("cond", cond);
             tera.register_filter("dirname", dirname);
             tera.register_filter("is_empty", is_empty);
+            tera.register_filter("j", json_encode);
+            tera.register_filter("json", json_encode);
+            tera.register_filter("q", quote);
             tera.register_filter("quote", quote);
 
             tera.register_function("confirm", confirm);

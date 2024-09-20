@@ -7,10 +7,11 @@ Most of string literals support using templates in them.
 # Filters
 There are lineup `filters` besides `tera` built-ins:
 * `basename` - Trims all directories from value;
+* [cond](#cond) - Adds one of two variants with respect to boolean value;
 * `dirname` - Trims file name from value;
 * `is_empty` - Return true if array, object or string is empty;
-* [cond](#cond) - Adds one of two variants with respect to boolean value;
-* [quote](#quote) - Shell escapes value.
+* `json`, `j` - Encode value to json (alias to `json_encode`);
+* [quote](#quote), `q` - Shell escapes value.
 
 ## Cond
 Cond filter has two argument `if` and `else`. Return `if` argument if the value
