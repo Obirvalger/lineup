@@ -14,13 +14,14 @@ use crate::runner::Runner;
 use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::tmpdir::tmpfile;
+use crate::vars::Var;
 use crate::worker::Worker;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct EnsureType {
     #[serde(default)]
-    pub vars: Vec<String>,
+    pub vars: Vec<Var>,
 }
 
 impl EnsureType {
@@ -28,8 +29,12 @@ impl EnsureType {
         let mut absent_vars = vec![];
 
         'vars: for var in &self.vars {
+            if !var.kind.is_nothing() {
+                warn!("kind doest not ensures on variable `{}`", var)
+            }
+
             let mut value = context.to_owned().into_json();
-            for part in var.split('.') {
+            for part in var.name.split('.') {
                 match value.get(part) {
                     Some(new_value) => value = new_value.to_owned(),
                     None => {
@@ -38,6 +43,8 @@ impl EnsureType {
                     }
                 }
             }
+
+            var.check_type(&value)?;
         }
 
         if !absent_vars.is_empty() {
@@ -406,14 +413,14 @@ mod tests {
     #[test]
     fn non_nested_ensure_vars() -> Result<()> {
         let mut ensure = EnsureType::default();
-        ensure.vars = vec!["user".to_string(), "packages".to_string()];
+        ensure.vars = vec!["user".parse()?, "packages".parse()?];
         ensure.ensure_vars(&context())
     }
 
     #[test]
     fn non_nested_ensure_vars_absent() -> Result<()> {
         let mut ensure = EnsureType::default();
-        ensure.vars = vec!["target".to_string()];
+        ensure.vars = vec!["target".parse()?];
         assert!(ensure.ensure_vars(&context()).is_err());
 
         Ok(())
@@ -422,14 +429,14 @@ mod tests {
     #[test]
     fn nested_ensure_vars() -> Result<()> {
         let mut ensure = EnsureType::default();
-        ensure.vars = vec!["vars.one".to_string(), "out.in.one".to_string()];
+        ensure.vars = vec!["vars.one".parse()?, "out.in.one".parse()?];
         ensure.ensure_vars(&context())
     }
 
     #[test]
     fn nested_ensure_vars_absent() -> Result<()> {
         let mut ensure = EnsureType::default();
-        ensure.vars = vec!["out.in.two".to_string()];
+        ensure.vars = vec!["out.in.two".parse()?];
         assert!(ensure.ensure_vars(&context()).is_err());
 
         Ok(())
@@ -438,14 +445,14 @@ mod tests {
     #[test]
     fn top_level_ensure_vars() -> Result<()> {
         let mut ensure = EnsureType::default();
-        ensure.vars = vec!["vars".to_string(), "out.in".to_string()];
+        ensure.vars = vec!["vars".parse()?, "out.in".parse()?];
         ensure.ensure_vars(&context())
     }
 
     #[test]
     fn top_level_ensure_vars_absent() -> Result<()> {
         let mut ensure = EnsureType::default();
-        ensure.vars = vec!["out.vars".to_string()];
+        ensure.vars = vec!["out.vars".parse()?];
         assert!(ensure.ensure_vars(&context()).is_err());
 
         Ok(())

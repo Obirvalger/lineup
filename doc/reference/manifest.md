@@ -47,12 +47,46 @@ vars.user = "user"
 ```
 
 # Vars
-This is a table with string keys (variable names) and values of any type.
-[Templates](templates.md) in strings are processed. For example, a bool
-variable `build` stores the user's response to a question:
+This is a table with string keys - [var defenition](#var-defenition) and
+values of any type. [Templates](templates.md) in strings are processed.
+For example, a bool variable `build` stores the user's response to a question:
 ```toml
 [vars]
 build = "{{ confirm(msg='Do you want to build package?', default=true) }}"
+```
+
+## Var defenition
+Variable defined by string containg vairable name with optional [type](#var-type) suffix
+and [kind](#var-kind) prefix.
+
+## Var type
+Variable type writes after variable name delimited by `:`.
+There are possible types:
+* `bool`, `b`;
+* `number`, `n`;
+* `u64`, `u`;
+* `i64`, `i`;
+* `f64`, `f`;
+* `string`, `s`;
+* `array`, `a`;
+* `object`, `o`.
+Type union can be created by writing several types separated by `|`.
+For example, [ensure](#ensure-task) variable `packages` should be `array` or
+`string` in `install` taskline:
+```toml
+[[tasklines.install]]
+ensure.vars = ["packages: array | string"]
+```
+
+## Var kind
+Variable kind writes before variable name delimited by `%`.
+There are possible kinds:
+* `json`, `j` - Decode json value from string;
+* `raw`, `r` - Does not render templates in value;
+* `yaml` - Decode yaml value from string.
+Example of appending `-m` to the flags array:
+```toml
+vars."json % flags" = "{{ flags | concat(with='-m') | json }}"
 ```
 
 

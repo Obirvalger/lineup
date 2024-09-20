@@ -80,7 +80,7 @@ impl Runner {
     }
 
     fn get_use_vars(context: &Context, dir: &Path, use_units: &[UseUnit]) -> Result<Vars> {
-        let mut vars = Vars::new(BTreeMap::new());
+        let mut vars = Vars::new();
 
         for use_unit in use_units {
             let module = module::resolve(&use_unit.module, dir);
@@ -110,7 +110,7 @@ impl Runner {
                 use_vars = BTreeMap::from([(prefix, serde_json::json!(use_vars))]);
             }
 
-            vars.extend(Vars::new(use_vars));
+            vars.extend(Vars::try_from(use_vars)?);
         }
 
         Ok(vars)

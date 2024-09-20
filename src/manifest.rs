@@ -14,7 +14,7 @@ use crate::task_type::TaskType;
 use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::use_unit::UseUnit;
-use crate::vars::{Vars, Maps};
+use crate::vars::{Maps, Vars};
 
 pub type Workers = BTreeMap<String, Worker>;
 pub type Tasklines = BTreeMap<String, Taskline>;

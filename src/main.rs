@@ -1,6 +1,4 @@
-use std::collections::BTreeMap;
-
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::{CommandFactory, Parser};
 use cmd_lib::run_cmd;
 use env_logger::Env;
@@ -12,6 +10,7 @@ use serde_json::Value;
 use crate::cli::{print_completions, Cli, Commands};
 use crate::config::Config;
 use crate::error::Error;
+use crate::render::Render;
 use crate::runner::Runner;
 use crate::tmpdir::TMPDIR;
 use crate::vars::Vars;
@@ -41,18 +40,16 @@ mod vars;
 mod worker;
 
 fn parse_extra_vars(extra_vars: &[String]) -> Result<Vars> {
-    let mut vars = BTreeMap::new();
+    let mut vars = Vars::new();
     for var in extra_vars {
         if let Some((name, value)) = var.split_once('=') {
-            let value: Value = serde_yaml::from_str(value)
-                .with_context(|| format!("Failed to parse extra variable `{}`", var))?;
-            vars.insert(name.to_string(), value);
+            vars.insert(name.parse()?, Value::String(value.to_string()));
         } else {
             return Err(Error::BadExtraVar(var.to_string()).into());
         }
     }
 
-    Ok(Vars::new(vars))
+    vars.render(&tera::Context::new(), "extra vars")
 }
 
 fn inner_main() -> Result<()> {
