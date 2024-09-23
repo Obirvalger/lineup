@@ -1,5 +1,7 @@
 [vars]
 copy_root_key = true
+groups = []
+flags = []
 
 
 [[tasklines._create-ssh-dir]]
@@ -21,12 +23,23 @@ shell.command = "cat ~root/.ssh/authorized_keys >> ~{{ user }}/.ssh/authorized_k
 
 
 [[taskline]]
-ensure.vars = ["user"]
+ensure.vars = [
+    "user: string",
+
+    "groups: array | string",
+    "flags: array | string",
+    "copy_root_key: bool",
+]
 
 [[taskline]]
 name = "Add user \"{{ user }}\""
-exec.args = ["useradd", "-m", "{{ user }}"]
-exec.check = false
+shell.cmd = "useradd {{ flags | quote }} {{ user | quote }}"
+vars = [
+    { gstr = "{{ groups | quote(sep=',') }}" },
+    { "j % gflags: a" = "{{ groups | is_empty | cond(if=[], else=['-G', gstr]) | j }}" },
+    { "j % flags: a" = "{{ gflags | concat(with='-m') | concat(with=flags) | j }}" },
+]
+if = "! id {{ user }} 2>/dev/null"
 
 [[taskline]]
 name = "Copy root authorized_keys to user {{ user }}"
