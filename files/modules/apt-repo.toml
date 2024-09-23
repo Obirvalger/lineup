@@ -1,5 +1,5 @@
 [[tasklines.add]]
-ensure.vars = ["task"]
+ensure.vars = ["task: u64 | string"]
 
 [[tasklines.add]]
 name = "Add task {{ task }}"
@@ -7,7 +7,7 @@ exec.args = ["apt-repo", "add", "{{ task }}"]
 
 
 [[tasklines.rm]]
-ensure.vars = ["task"]
+ensure.vars = ["task: u64 | string"]
 
 [[tasklines.rm]]
 name = "Remove task {{ task }}"

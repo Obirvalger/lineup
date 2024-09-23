@@ -1,5 +1,5 @@
 [[taskline]]
-ensure.vars = ["file", "expression"]
+ensure.vars = ["file: string", "expression: string"]
 
 [[taskline]]
 name = "Sed file {{ file }} with expression {{ expression }}"
