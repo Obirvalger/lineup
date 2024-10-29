@@ -171,20 +171,21 @@ impl Engine {
         command_in_error: S,
         mut cmd: Cmd,
         params: &CmdParams,
-    ) -> Result<()> {
+    ) -> Result<CmdOut> {
         if let Some(stdin) = &params.stdin {
             cmd.set_stdin(stdin);
         }
 
         debug!("Run cmd: {}", cmd.get_args());
-        let out = cmd.run()?;
+        let mut out = cmd.run()?;
+        out.success_codes(&params.success_codes);
         let stdout = out.stdout();
         let stderr = out.stderr();
 
         params.stdout.show(&stdout);
         params.stderr.show(&stderr);
 
-        if params.check && !out.success(&params.success_codes) {
+        if params.check && !out.success() {
             bail!(Error::CommandFailedExitCode(command_in_error.as_ref().to_string()));
         }
 
@@ -200,7 +201,7 @@ impl Engine {
             }
         }
 
-        Ok(())
+        Ok(out)
     }
 
     pub fn shell<N: AsRef<str>, S: AsRef<str>>(
@@ -208,7 +209,7 @@ impl Engine {
         name: N,
         command: S,
         params: &CmdParams,
-    ) -> Result<()> {
+    ) -> Result<CmdOut> {
         let cmd = self.shell_cmd(name, command.as_ref());
 
         self.run(command, cmd, params)
@@ -219,7 +220,7 @@ impl Engine {
         name: N,
         args: &[S],
         params: &CmdParams,
-    ) -> Result<()> {
+    ) -> Result<CmdOut> {
         let command = quote_args(args)?;
         let cmd = match self {
             Engine::Dbg(engine) => engine.exec_cmd(name, args),

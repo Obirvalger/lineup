@@ -5,6 +5,7 @@ use anyhow::Result;
 use log::info;
 use rayon_cond::CondIterator;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::fs_var::FsVar;
 use crate::items::Items;
@@ -45,6 +46,7 @@ pub struct Task {
     pub clean_vars: bool,
     #[serde(default = "default_task_parallel")]
     pub parallel: bool,
+    pub result_fs_var: Option<String>,
     #[serde(default)]
     pub vars: ExtVars,
     #[serde(flatten)]
@@ -61,7 +63,7 @@ impl Task {
         dir: &Path,
         tasklines: &Tasklines,
         worker: &Worker,
-    ) -> Result<()> {
+    ) -> Result<Value> {
         let context = if self.clean_vars { Context::default() } else { context.to_owned() };
 
         let items = self
@@ -77,8 +79,8 @@ impl Task {
             .unwrap_or_else(|| "item".to_string());
 
         let name = name.as_ref().map(|n| n.as_ref().to_string());
-        CondIterator::new(items, self.parallel)
-            .map(|item| -> Result<()> {
+        let values = CondIterator::new(items, self.parallel)
+            .map(|item| -> Result<(Value, String)> {
                 let table = self
                     .table
                     .as_ref()
@@ -99,8 +101,8 @@ impl Task {
                     }
                 }
 
-                CondIterator::new(table, self.parallel)
-                    .map(|row| -> Result<()> {
+                let values = CondIterator::new(table, self.parallel)
+                    .map(|row| -> Result<Value> {
                         let mut context = context.to_owned();
                         context.insert("row", &row);
                         let task_vars = self.vars.render(&context, "task")?;
@@ -108,7 +110,7 @@ impl Task {
                         if let Some(condition) = &self.condition {
                             let condition = condition.render(&context, "task condition")?;
                             if worker.shell(condition, &CmdParams::default()).is_err() {
-                                return Ok(());
+                                return Ok(Value::Null);
                             }
                         }
                         if let Some(name) = &name {
@@ -129,12 +131,33 @@ impl Task {
                                 info!("Run task `{}` on worker `{}`", name, &worker.name);
                             };
                         }
+
                         self.task_type.run(&context, dir, tasklines, worker)
                     })
-                    .find_any(|r| r.is_err())
-                    .unwrap_or(Ok(()))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                let value =
+                    if self.table.is_some() { Value::Array(values) } else { values[0].to_owned() };
+
+                Ok((value, item))
             })
-            .find_any(|r| r.is_err())
-            .unwrap_or(Ok(()))
+            .collect::<Result<Vec<_>>>()?;
+        let value = if self.items_table.is_some() {
+            let mut map = serde_json::Map::new();
+            for value in values {
+                map.insert(value.1, value.0);
+            }
+            Value::Object(map)
+        } else {
+            values[0].0.to_owned()
+        };
+
+        if let Some(fs_var_name) = &self.result_fs_var {
+            let fs_var_name = fs_var_name.render(&context, "task result-fs-var")?;
+            let fs_var = FsVar::new(fs_var_name)?;
+            fs_var.write(&value)?;
+        }
+
+        Ok(value)
     }
 }

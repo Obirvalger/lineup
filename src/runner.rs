@@ -7,6 +7,7 @@ use anyhow::Context as AnyhowContext;
 use anyhow::{bail, Result};
 use rayon::prelude::*;
 use regex::RegexSet;
+use serde_json::Value;
 
 use crate::engine::ExistsAction;
 use crate::error::Error;
@@ -182,6 +183,10 @@ impl Runner {
     }
 
     pub fn run(&mut self) -> Result<()> {
+        let mut context = Context::new();
+        context.insert("result", &Value::Null);
+        context.extend(self.vars.context()?);
+
         let tasks_graph = self
             .taskset
             .iter()
@@ -224,14 +229,14 @@ impl Runner {
                     self.taskset.get(name).ok_or(Error::BadTaskInTaskset(name.to_string()))?;
                 let task = &taskset_elem.task;
                 self.workers.par_iter().try_for_each(|worker| -> Result<()> {
-                    let mut context = self.vars.context()?;
-                    context.insert("worker", &worker.name);
                     if workers_by_task
                         .get(name)
                         .cloned()
                         .unwrap_or_default()
                         .contains(&worker.name)
                     {
+                        let mut context = context.to_owned();
+                        context.insert("worker", &worker.name);
                         task.run(&Some(name), &context, &self.dir, &self.tasklines, worker)?;
                     };
 

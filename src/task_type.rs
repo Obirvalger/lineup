@@ -4,7 +4,9 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Result};
 use log::{log, warn, LevelFilter};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
+use crate::cmd::CmdOut;
 use crate::error::Error;
 use crate::manifest::Tasklines;
 use crate::matches::Matches;
@@ -60,10 +62,10 @@ impl EnsureType {
         Ok(())
     }
 
-    pub fn ensure(&self, context: &Context) -> Result<()> {
+    pub fn ensure(&self, context: &Context) -> Result<Value> {
         self.ensure_vars(context)?;
 
-        Ok(())
+        Ok(Value::Bool(true))
     }
 }
 
@@ -199,11 +201,16 @@ pub struct ExecType {
 }
 
 impl ExecType {
-    pub fn run(&self, context: &Context, worker: &Worker) -> Result<()> {
+    pub fn run_out(&self, context: &Context, worker: &Worker) -> Result<CmdOut> {
         worker.exec(
             &self.args.render(context, "args in exec task")?,
             &self.params.render(context, "exec task")?,
         )
+    }
+
+    pub fn run(&self, context: &Context, worker: &Worker) -> Result<Value> {
+        let out = self.run_out(context, worker)?;
+        Ok(Value::String(out.stdout()))
     }
 }
 
@@ -218,11 +225,16 @@ pub struct ShellType {
 }
 
 impl ShellType {
-    pub fn run(&self, context: &Context, worker: &Worker) -> Result<()> {
+    pub fn run_out(&self, context: &Context, worker: &Worker) -> Result<CmdOut> {
         worker.shell(
             self.command.render(context, "command in shell task")?,
             &self.params.render(context, "shell task")?,
         )
+    }
+
+    pub fn run(&self, context: &Context, worker: &Worker) -> Result<Value> {
+        let out = self.run_out(context, worker)?;
+        Ok(Value::String(out.stdout()))
     }
 }
 
@@ -245,10 +257,10 @@ pub enum TestTypeCommand {
 }
 
 impl TestTypeCommand {
-    pub fn run(&self, context: &Context, worker: &Worker) -> Result<()> {
+    pub fn run(&self, context: &Context, worker: &Worker) -> Result<CmdOut> {
         match self {
-            Self::Exec(exec) => exec.run(context, worker),
-            Self::Shell(shell) => shell.run(context, worker),
+            Self::Exec(exec) => exec.run_out(context, worker),
+            Self::Shell(shell) => shell.run_out(context, worker),
         }
     }
 }
@@ -281,7 +293,7 @@ impl TaskType {
         dir: &Path,
         tasklines: &Tasklines,
         worker: &Worker,
-    ) -> Result<()> {
+    ) -> Result<Value> {
         let mut context = context.to_owned();
         match self {
             Self::Ensure(ensure) => ensure.ensure(&context),
@@ -291,14 +303,16 @@ impl TaskType {
                 let dst = dst.render(&context, "file task dst")?;
                 match source {
                     FileTypeSource::Src(src) => {
-                        worker.copy(src.render(&context, "file task src")?, dst)
+                        worker.copy(src.render(&context, "file task src")?, &dst)
                     }
                     FileTypeSource::Content(contents) => {
                         let src = tmpfile();
                         fs::write(&src, contents)?;
-                        worker.copy(src, dst)
+                        worker.copy(src, &dst)
                     }
-                }
+                }?;
+
+                Ok(Value::String(dst.to_string_lossy().to_string()))
             }
             Self::Get(GetType { src, dst }) => {
                 let src = src.render(&context, "get task src")?;
@@ -309,7 +323,9 @@ impl TaskType {
                         src.file_name().ok_or_else(|| Error::GetSrcFilename(src.to_owned()))?;
                     dir.join(name)
                 };
-                worker.get(src, dst)
+                worker.get(src, &dst)?;
+
+                Ok(Value::String(dst.to_string_lossy().to_string()))
             }
             Self::Run(taskline) => Self::RunTaskline(RunTasklineType {
                 taskline: taskline.to_owned(),
@@ -361,18 +377,22 @@ impl TaskType {
                 };
                 context.insert("taskline", &taskline_str);
 
+                let mut value = Value::Null;
                 for task in taskline.as_line().expect("get not line variant of taskline") {
-                    task.task.run(&task.name, &context, &dir, &new_tasklines, worker)?;
+                    value = task.task.run(&task.name, &context, &dir, &new_tasklines, worker)?;
+                    context.insert("result", &value);
                 }
 
-                Ok(())
+                Ok(value)
             }
             Self::Test(TestType { commands }) => {
+                let mut success = true;
+
                 for command in commands {
-                    command.run(&context, worker)?;
+                    success &= command.run(&context, worker)?.success();
                 }
 
-                Ok(())
+                Ok(Value::Bool(success))
             }
         }
     }

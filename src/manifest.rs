@@ -257,6 +257,7 @@ fn default_taskset() -> Taskset {
         items_table: None,
         clean_vars: Default::default(),
         parallel: true,
+        result_fs_var: None,
         vars: Default::default(),
         task_type,
     };

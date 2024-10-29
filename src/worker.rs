@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Result};
 
+use crate::cmd::CmdOut;
 use crate::engine::{Engine, ExistsAction};
 use crate::error::Error;
 use crate::manifest::DefaultWorker;
@@ -95,7 +96,7 @@ impl Worker {
             self.engine.setup(&self.name, action)?;
             let cmd = "echo ${TMPDIR:-${TMP:-/tmp}}/lineup";
             let out = self.engine.shell_out(&self.name, cmd, &None)?;
-            if !out.success(&[0]) {
+            if !out.success() {
                 bail!(Error::WorkerSetupFailed(self.name.to_string()))
             }
             self.workdir = PathBuf::from(out.stdout());
@@ -126,13 +127,11 @@ impl Worker {
         Ok(())
     }
 
-    pub fn exec<S: AsRef<str>>(&self, args: &[S], params: &CmdParams) -> Result<()> {
-        self.engine.exec(&self.name, args, params)?;
-
-        Ok(())
+    pub fn exec<S: AsRef<str>>(&self, args: &[S], params: &CmdParams) -> Result<CmdOut> {
+        self.engine.exec(&self.name, args, params)
     }
 
-    pub fn shell<S: AsRef<str>>(&self, command: S, params: &CmdParams) -> Result<()> {
+    pub fn shell<S: AsRef<str>>(&self, command: S, params: &CmdParams) -> Result<CmdOut> {
         self.engine.shell(&self.name, command, params)
     }
 }

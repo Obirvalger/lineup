@@ -90,20 +90,25 @@ impl Cmd {
 #[derive(Clone, Debug)]
 pub struct CmdOut {
     inner: Output,
+    success_codes: Vec<i32>,
 }
 
 impl CmdOut {
     pub fn new(output: Output) -> Self {
-        Self { inner: output }
+        Self { inner: output, success_codes: vec![0] }
     }
 
-    pub fn success(&self, success_codes: &[i32]) -> bool {
-        if success_codes.is_empty() {
+    pub fn success_codes(&mut self, success_codes: &[i32]) {
+        self.success_codes = Vec::from(success_codes);
+    }
+
+    pub fn success(&self) -> bool {
+        if self.success_codes.is_empty() {
             return true;
         }
 
         if let Some(code) = self.inner.status.code() {
-            success_codes.contains(&code)
+            self.success_codes.contains(&code)
         } else {
             false
         }

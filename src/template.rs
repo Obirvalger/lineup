@@ -261,7 +261,7 @@ fn host_cmd(args: &HashMap<String, Value>) -> tera::Result<Value> {
     let args = cmd.get_args();
     let out = cmd.run().map_err(tera::Error::msg)?;
 
-    if check && !out.success(&[0]) {
+    if check && !out.success() {
         return Err(tera::Error::msg(format!("In function `host_cmd` command `{}` failed", args)));
     }
 
