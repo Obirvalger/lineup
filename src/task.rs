@@ -61,9 +61,7 @@ impl Task {
         tasklines: &Tasklines,
         worker: &Worker,
     ) -> Result<()> {
-        let task_vars = self.vars.render(context, "task")?;
-        let mut context = if self.clean_vars { Context::default() } else { context.to_owned() };
-        context.extend(task_vars.vars()?.context()?);
+        let context = if self.clean_vars { Context::default() } else { context.to_owned() };
 
         let items = self
             .items_table
@@ -104,6 +102,8 @@ impl Task {
                     .map(|row| -> Result<()> {
                         let mut context = context.to_owned();
                         context.insert("row", &row);
+                        let task_vars = self.vars.render(&context, "task")?;
+                        context.extend(task_vars.vars()?.context()?);
                         if let Some(condition) = &self.condition {
                             let condition = condition.render(&context, "task condition")?;
                             if worker.shell(condition, &CmdParams::default()).is_err() {
