@@ -9,6 +9,7 @@ There are lineup `filters` besides `tera` built-ins:
 * `basename` - Trims all directories from value;
 * [cond](#cond) - Adds one of two variants with respect to boolean value;
 * `dirname` - Trims file name from value;
+* [fs](#fs-filter) - Read `fs` variable;
 * `is_empty` - Return true if array, object or string is empty;
 * `json`, `j` - Encode value to json (alias to `json_encode`);
 * [quote](#quote), `q` - Shell escapes value.
@@ -19,6 +20,13 @@ is true and `else` argument otherwise. Default value for arguments is a `""`.
 For example add a `--now` flag if `now` variable is true:
 ```toml
 shell.command = "systemctl enable {{ now | cond(if='--now') }} docker"
+```
+
+## Fs filter
+Read value stored in `fs` variable via kind. For example, save to variable
+`var` value from `fs` varaiable `fs_var`:
+```toml
+var = "{{ 'fs_var' | fs }}"
 ```
 
 ## Quote
@@ -36,6 +44,7 @@ shell.command = "apt-get remove -y {{ packages | quote }}"
 There are lineup `functions` besides `tera` built-ins:
 * [confirm](#confirm) - Asks user a question and returns response as
     boolean value;
+* [fs](#fs-function) - Read `fs` variable;
 * [host_cmd](#hostCmd) - Returns output from running on host command;
 * `tmpdir` - Returns path to tmpdir.
 
@@ -45,6 +54,13 @@ argument with message showed to user. And `default` argument which presets
 some value. Example of using confirm to set a boolean variable:
 ```toml
 build = "{{ confirm(msg='Do you want to build package?', default=true) }}"
+```
+
+## Fs function
+Read value stored in `fs` variable via kind. For example, save to variable
+`var` value from `fs` varaiable `fs_var`:
+```toml
+var = "{{ fs(name='fs_var') }}"
 ```
 
 ## HostCmd

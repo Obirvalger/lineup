@@ -6,6 +6,7 @@ use log::info;
 use rayon_cond::CondIterator;
 use serde::{Deserialize, Serialize};
 
+use crate::fs_var::FsVar;
 use crate::items::Items;
 use crate::manifest::Tasklines;
 use crate::render::Render;

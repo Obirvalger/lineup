@@ -13,7 +13,12 @@ use serde_json::{to_string, to_string_pretty};
 use tera::Tera;
 
 use crate::cmd::Cmd;
+use crate::fs_var::FsVar;
 use crate::tmpdir::TMPDIR;
+
+fn wrap_error(error: anyhow::Error) -> tera::Error {
+    tera::Error::msg(error)
+}
 
 fn basename(value: &Value, _args: &HashMap<String, Value>) -> tera::Result<Value> {
     let error_not_support = "Value of not supported type";
@@ -54,6 +59,23 @@ fn dirname(value: &Value, _args: &HashMap<String, Value>) -> tera::Result<Value>
                 .unwrap_or_else(|| value.to_string());
             Ok(Value::String(new_value))
         }
+        _ => Err(error_not_support.into()),
+    }
+}
+
+fn fs_helper(name: &str) -> tera::Result<Value> {
+    let fs_var = FsVar::new(name).map_err(wrap_error)?;
+    if !fs_var.exists() {
+        return Err(format!("Fs var `{}` does not exist", name).into());
+    }
+
+    fs_var.read().map_err(wrap_error)
+}
+
+fn fs_filter(value: &Value, _: &HashMap<String, Value>) -> tera::Result<Value> {
+    let error_not_support = "Value of not supported type";
+    match value {
+        Value::String(name) => fs_helper(name),
         _ => Err(error_not_support.into()),
     }
 }
@@ -148,6 +170,18 @@ fn confirm(args: &HashMap<String, Value>) -> tera::Result<Value> {
     match ans {
         Ok(ans) => Ok(Value::Bool(ans)),
         Err(err) => Err(tera::Error::msg(err)),
+    }
+}
+
+fn fs_function(args: &HashMap<String, Value>) -> tera::Result<Value> {
+    let error_not_support = "Value of not supported type";
+    let name = match args.get("name") {
+        Some(val) => val,
+        None => return Err(tera::Error::msg("Function `fs` didn't receive a `name` argument")),
+    };
+    match name {
+        Value::String(name) => fs_helper(name),
+        _ => Err(error_not_support.into()),
     }
 }
 
@@ -254,6 +288,7 @@ pub fn render<S: ToString, P: AsRef<str>>(
             tera.register_filter("basename", basename);
             tera.register_filter("cond", cond);
             tera.register_filter("dirname", dirname);
+            tera.register_filter("fs", fs_filter);
             tera.register_filter("is_empty", is_empty);
             tera.register_filter("j", json_encode);
             tera.register_filter("json", json_encode);
@@ -261,6 +296,7 @@ pub fn render<S: ToString, P: AsRef<str>>(
             tera.register_filter("quote", quote);
 
             tera.register_function("confirm", confirm);
+            tera.register_function("fs", fs_function);
             tera.register_function("host_cmd", host_cmd);
             tera.register_function("tmpdir", tmpdir);
             tera

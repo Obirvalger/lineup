@@ -6,6 +6,8 @@ use thiserror::Error as ThisError;
 pub enum Error {
     #[error("extra var `{0}` does not have '=' to delimit name")]
     BadExtraVar(String),
+    #[error("Fs var name should be alphanumeric, but get `{0}`")]
+    BadFsVar(String),
     #[error("kind argument `{0}` does not have ':' to delimit name")]
     BadKindArg(String),
     #[error("kind argument `render` must be true or false, but get `{0}`")]

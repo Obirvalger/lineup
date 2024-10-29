@@ -21,6 +21,7 @@ mod config;
 mod engine;
 mod error;
 mod files;
+mod fs_var;
 mod items;
 mod manifest;
 mod matches;

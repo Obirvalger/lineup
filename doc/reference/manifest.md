@@ -81,12 +81,18 @@ ensure.vars = ["packages: array | string"]
 ## Var kind
 Variable kind writes before variable name delimited by `%`.
 There are possible kinds:
+* `fs` - Store a variable on the filesystem (use template filter or
+    function `fs` to read value);
 * `json`, `j` - Decode json value from string;
 * `raw`, `r` - Does not render templates in value;
 * `yaml` - Decode yaml value from string.
 Example of appending `-m` to the flags array:
 ```toml
 vars."json % flags" = "{{ flags | concat(with='-m') | json }}"
+```
+Example of storing empty array to a `fs` vaiable `fs_var`:
+```toml
+vars."fs % fs_var" = []
 ```
 
 

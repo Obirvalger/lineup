@@ -14,11 +14,13 @@ use serde_json::{json, value::Value};
 use tera::Context;
 
 use crate::error::Error;
+use crate::fs_var::FsVar;
 use crate::render::Render;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Kind {
+    Fs,
     Json,
     #[default]
     Nothing,
@@ -50,6 +52,18 @@ impl Kind {
         }
 
         let value = match self {
+            Self::Fs => {
+                let value = if render {
+                    value.render(context, format!("variables in {}", place.as_ref()))?
+                } else {
+                    value.to_owned()
+                };
+
+                let fs_var = FsVar::new(name)?;
+                fs_var.write(&value)?;
+
+                Value::String(name.to_string())
+            }
             Self::Json => {
                 let value = if render {
                     value.render(context, format!("variables in {}", place.as_ref()))?
@@ -93,6 +107,7 @@ impl FromStr for Kind {
 
     fn from_str(s: &str) -> StdResult<Self, Self::Err> {
         match s.to_lowercase().as_str() {
+            "fs" => Ok(Self::Fs),
             "json" | "j" => Ok(Self::Json),
             "raw" | "r" => Ok(Self::Raw),
             "yaml" => Ok(Self::Yaml),
@@ -111,6 +126,7 @@ impl From<Kind> for String {
 impl fmt::Display for Kind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Fs => write!(f, "fs"),
             Self::Json => write!(f, "json"),
             Self::Nothing => write!(f, ""),
             Self::Raw => write!(f, "raw"),
