@@ -136,7 +136,7 @@ fn default_cmd_stderr() -> CmdOutput {
     CmdOutput { log: LevelFilter::Warn, print: false }
 }
 
-fn default_cmd_check() -> bool {
+pub fn default_cmd_check() -> bool {
     true
 }
 
@@ -147,8 +147,7 @@ fn default_cmd_success_codes() -> Vec<i32> {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct CmdParams {
-    #[serde(default = "default_cmd_check")]
-    pub check: bool,
+    pub check: Option<bool>,
     pub stdin: Option<String>,
     #[serde(default = "default_cmd_stdout")]
     pub stdout: CmdOutput,
@@ -180,7 +179,7 @@ impl Render for CmdParams {
 impl Default for CmdParams {
     fn default() -> CmdParams {
         CmdParams {
-            check: default_cmd_check(),
+            check: Default::default(),
             stdin: Default::default(),
             stdout: default_cmd_stdout(),
             stderr: default_cmd_stderr(),
@@ -201,15 +200,14 @@ pub struct ExecType {
 }
 
 impl ExecType {
-    pub fn run_out(&self, context: &Context, worker: &Worker) -> Result<CmdOut> {
-        worker.exec(
-            &self.args.render(context, "args in exec task")?,
-            &self.params.render(context, "exec task")?,
-        )
+    pub fn run_out(&self, context: &Context, worker: &Worker, check: bool) -> Result<CmdOut> {
+        let mut params = self.params.render(context, "exec task")?;
+        params.check.get_or_insert(check);
+        worker.exec(&self.args.render(context, "args in exec task")?, &params)
     }
 
     pub fn run(&self, context: &Context, worker: &Worker) -> Result<Value> {
-        let out = self.run_out(context, worker)?;
+        let out = self.run_out(context, worker, default_cmd_check())?;
         Ok(Value::String(out.stdout()))
     }
 }
@@ -225,15 +223,14 @@ pub struct ShellType {
 }
 
 impl ShellType {
-    pub fn run_out(&self, context: &Context, worker: &Worker) -> Result<CmdOut> {
-        worker.shell(
-            self.command.render(context, "command in shell task")?,
-            &self.params.render(context, "shell task")?,
-        )
+    pub fn run_out(&self, context: &Context, worker: &Worker, check: bool) -> Result<CmdOut> {
+        let mut params = self.params.render(context, "shell task")?;
+        params.check.get_or_insert(check);
+        worker.shell(self.command.render(context, "command in shell task")?, &params)
     }
 
     pub fn run(&self, context: &Context, worker: &Worker) -> Result<Value> {
-        let out = self.run_out(context, worker)?;
+        let out = self.run_out(context, worker, default_cmd_check())?;
         Ok(Value::String(out.stdout()))
     }
 }
@@ -257,10 +254,10 @@ pub enum TestTypeCommand {
 }
 
 impl TestTypeCommand {
-    pub fn run(&self, context: &Context, worker: &Worker) -> Result<CmdOut> {
+    pub fn run(&self, context: &Context, worker: &Worker, check: bool) -> Result<CmdOut> {
         match self {
-            Self::Exec(exec) => exec.run_out(context, worker),
-            Self::Shell(shell) => shell.run_out(context, worker),
+            Self::Exec(exec) => exec.run_out(context, worker, check),
+            Self::Shell(shell) => shell.run_out(context, worker, check),
         }
     }
 }
@@ -271,6 +268,8 @@ impl TestTypeCommand {
 pub struct TestType {
     #[serde(alias = "cmds")]
     commands: Vec<TestTypeCommand>,
+    #[serde(default = "default_cmd_check")]
+    check: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -385,11 +384,11 @@ impl TaskType {
 
                 Ok(value)
             }
-            Self::Test(TestType { commands }) => {
+            Self::Test(TestType { commands, check }) => {
                 let mut success = true;
 
                 for command in commands {
-                    success &= command.run(&context, worker)?.success();
+                    success &= command.run(&context, worker, *check)?.success();
                 }
 
                 Ok(Value::Bool(success))

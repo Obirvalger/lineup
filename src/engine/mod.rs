@@ -16,7 +16,7 @@ use crate::engine::ssh::EngineSsh;
 use crate::engine::vml::EngineVml;
 use crate::error::Error;
 use crate::manifest::Engine as ManifestEngine;
-use crate::task_type::CmdParams;
+use crate::task_type::{default_cmd_check, CmdParams};
 use crate::template::Context;
 
 mod base;
@@ -185,7 +185,7 @@ impl Engine {
         params.stdout.show(&stdout);
         params.stderr.show(&stderr);
 
-        if params.check && !out.success() {
+        if params.check.unwrap_or(default_cmd_check()) && !out.success() {
             bail!(Error::CommandFailedExitCode(command_in_error.as_ref().to_string()));
         }
 
