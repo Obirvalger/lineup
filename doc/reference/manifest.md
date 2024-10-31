@@ -254,12 +254,26 @@ ensure.vars = ["user", "vars.lil"]
 ```
 
 ## Test task
-Field `commands` with an array of args or shell commands.
+Run commands. Fails on first failure command run with check. List of fields:
+* `commands` - Contains an array of args or shell commands;
+* `check` - Uses to overwrite default check value for commands.
 Example of running two commands and printing theirs output:
 ```toml
 test.commands = [
     { cmd = "echo lil", stdout = { print = true } },
     { cmd = "echo lal >&2", stderr = { print = true } },
+]
+```
+Example of runnig several success of failure commands with check disabled by
+default:
+```toml
+test.check = false
+test.commands = [
+    "true", # shell task
+    ["false"], # exec task
+    { cmd = "false" }, # shell task
+    { args = ["true"] }, # exec task
+    { cmd = "true", check = true }, # check only this command
 ]
 ```
 
