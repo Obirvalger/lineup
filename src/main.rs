@@ -54,9 +54,8 @@ fn parse_extra_vars(extra_vars: &[String]) -> Result<Vars> {
 }
 
 fn inner_main() -> Result<()> {
-    files::install_main_config()?;
     config::init()?;
-    files::install_modules()?;
+    files::install_all()?;
     let tmpdir = &TMPDIR;
     defer! {
         // ignore fail in removing tmpdir

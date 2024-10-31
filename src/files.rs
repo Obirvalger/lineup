@@ -6,7 +6,7 @@ use anyhow::Result;
 use file_lock::{FileLock, FileOptions};
 use rust_embed::RustEmbed;
 
-use crate::config::config_dir;
+use crate::config::{config_dir, CONFIG};
 
 #[derive(RustEmbed)]
 #[folder = "files/configs"]
@@ -32,7 +32,7 @@ fn lock_write<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> Result<()
     Ok(())
 }
 
-fn install_file<S: AsRef<str>>(filename: S, directory: &Path) -> Result<()> {
+pub fn install_file<S: AsRef<str>>(filename: S, directory: &Path) -> Result<()> {
     let filename = filename.as_ref();
     let mut basename = filename.to_owned();
     let path = Path::new(filename);
@@ -78,17 +78,17 @@ fn install_hier<S: AsRef<str>>(filename: S, directory: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn install_main_config() -> Result<()> {
-    if !config_dir().join("config.toml").exists() {
-        install_file("configs/config.toml", &config_dir())?;
+fn install_modules() -> Result<()> {
+    for file in AssetModules::iter() {
+        install_hier(file, &config_dir())?;
     }
 
     Ok(())
 }
 
-pub fn install_modules() -> Result<()> {
-    for file in AssetModules::iter() {
-        install_hier(file, &config_dir())?;
+pub fn install_all() -> Result<()> {
+    if CONFIG.install_embedded_modules {
+        install_modules()?;
     }
 
     Ok(())

@@ -7,11 +7,17 @@ use anyhow::{Context, Result};
 use log::LevelFilter;
 use serde::Deserialize;
 
+use crate::files::install_file;
+
 pub static CONFIG: LazyLock<Config> =
     LazyLock::new(|| CONFIG_INNER.get().expect("Config should be initialized").to_owned());
 static CONFIG_INNER: OnceLock<Config> = OnceLock::new();
 
 pub fn init() -> Result<()> {
+    if !config_dir().join("config.toml").exists() {
+        install_file("configs/config.toml", &config_dir())?;
+    }
+
     let config = Config::new()?;
     CONFIG_INNER.get_or_init(|| config);
 

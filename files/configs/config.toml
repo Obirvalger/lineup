@@ -1,2 +1,8 @@
+# Set default log level
 log-level = "Info"
+
+# Control installation of embedded modules
 install-embedded-modules = true
+
+# Clean workers after successefully run all tasks
+clean = true
