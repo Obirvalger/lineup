@@ -250,14 +250,24 @@ pub struct RunTasklineType {
 #[serde(untagged)]
 pub enum TestTypeCommand {
     Exec(ExecType),
+    ExecArgs(Vec<String>),
     Shell(ShellType),
+    ShellCommand(String),
 }
 
 impl TestTypeCommand {
     pub fn run(&self, context: &Context, worker: &Worker, check: bool) -> Result<CmdOut> {
         match self {
             Self::Exec(exec) => exec.run_out(context, worker, check),
+            Self::ExecArgs(args) => {
+                let exec = ExecType { args: args.to_owned(), params: Default::default() };
+                exec.run_out(context, worker, check)
+            }
             Self::Shell(shell) => shell.run_out(context, worker, check),
+            Self::ShellCommand(command) => {
+                let shell = ShellType { command: command.to_string(), params: Default::default() };
+                shell.run_out(context, worker, check)
+            }
         }
     }
 }
