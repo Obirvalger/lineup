@@ -1,10 +1,22 @@
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::{LazyLock, OnceLock};
 
 use anyhow::{Context, Result};
 use log::LevelFilter;
 use serde::Deserialize;
+
+pub static CONFIG: LazyLock<Config> =
+    LazyLock::new(|| CONFIG_INNER.get().expect("Config should be initialized").to_owned());
+static CONFIG_INNER: OnceLock<Config> = OnceLock::new();
+
+pub fn init() -> Result<()> {
+    let config = Config::new()?;
+    CONFIG_INNER.get_or_init(|| config);
+
+    Ok(())
+}
 
 fn default_install_embedded_modules() -> bool {
     true

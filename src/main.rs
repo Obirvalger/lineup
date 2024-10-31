@@ -8,7 +8,7 @@ use scopeguard::defer;
 use serde_json::Value;
 
 use crate::cli::{print_completions, Cli, Commands};
-use crate::config::Config;
+use crate::config::CONFIG;
 use crate::error::Error;
 use crate::render::Render;
 use crate::runner::Runner;
@@ -55,7 +55,7 @@ fn parse_extra_vars(extra_vars: &[String]) -> Result<Vars> {
 
 fn inner_main() -> Result<()> {
     files::install_main_config()?;
-    let config = Config::new()?;
+    config::init()?;
     files::install_modules()?;
     let tmpdir = &TMPDIR;
     defer! {
@@ -63,7 +63,7 @@ fn inner_main() -> Result<()> {
         let _ = run_cmd!(rm -rf $tmpdir);
     }
     let args = Cli::parse();
-    let level = args.log_level.unwrap_or(config.log_level.to_string());
+    let level = args.log_level.unwrap_or(CONFIG.log_level.to_string());
     env_logger::Builder::from_env(Env::default().default_filter_or(level))
         .format_target(false)
         .format_timestamp(None)
@@ -91,7 +91,7 @@ fn inner_main() -> Result<()> {
             runner.skip_tasks(&args.skip_tasks);
             runner.run()?;
 
-            if config.clean {
+            if CONFIG.clean {
                 if !args.no_clean {
                     runner.clean()?;
                 }
