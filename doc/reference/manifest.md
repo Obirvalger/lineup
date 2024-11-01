@@ -154,49 +154,24 @@ Tasks are defined by a [task type](#task-types) and have some parameters:
 
 ## Task types
 There are several types of tasks:
+* [ensure](#ensure-task) - Ensure taskline could be run;
 * [exec](#exec-task) - Run a command from an args array;
-* [shell](#shell-task) - Run a command from a shell string;
 * [file](#file-task) - Copy a file to the worker;
 * [get](#get-task) - Copy a file from the worker;
-* [run](#run-task) - Run a taskline;
 * [run-taskline](#runTaskline-task) - Run a taskline from the file;
-* [ensure](#ensure-task) - Ensure taskline could be run;
+* [run](#run-task) - Run a taskline;
+* [shell](#shell-task) - Run a command from a shell string;
 * [test](#test-task) - An array of commands.
 
-## Command output
-Controls the redirection of the command output. Fields:
-* `log` - Log output with a provided level;
-* `print` - Print output to stdout.
-For example, print stdout and log with `trace` level;
+## Ensure task
+It has field `vars` with an array of variable names. Check them to be set.
+Example of ensuring two variable `user` and `vars.lil` are set:
 ```toml
-shell.command = "echo LiL"
-shell.stdout = { print = true, log = "trace" }
+ensure.vars = ["user", "vars.lil"]
 ```
-
-## Matches
-It is a formula consisting of `and`, `or` and `err-re`, `out-re`, `any-re`.
-For example, `failure-matches` in a `shell` task;
-```toml
-shell.command = "ls LLM.toml"
-shell.failure-matches = { or = [ { err-re = "LLM" }, { err-re = "toml" }]}
-```
-
-## Common command parameters
-Some common command parameters:
-* `check` - Fails the task if the command fails;
-* `stdin` - Pass a provided string to the command's stdin;
-* `stdout` - [Command output](#command-output) for stdout;
-* `stderr` - [Command output](#command-output) for stderr;
-* `success-codes` - Array of return codes treated as successful termination;
-* `success-matches` - [Matches](#matches) that need to be matched for success;
-* `failure-matches` - [Matches](#matches) that match means failure.
 
 ## Exec task
 Consists of an `args` array of strings represented command and
-[common command parameters](#common-command-parameters).
-
-## Shell task
-Consists of a `command` string with a shell command and
 [common command parameters](#common-command-parameters).
 
 ## File task
@@ -246,12 +221,9 @@ run-taskline = { module = "apt-get", taskline = "install" }
 vars.packages = [ "apt-repo" ]
 ```
 
-## Ensure task
-It has field `vars` with an array of variable names. Check them to be set.
-Example of ensuring two variable `user` and `vars.lil` are set:
-```toml
-ensure.vars = ["user", "vars.lil"]
-```
+## Shell task
+Consists of a `command` string with a shell command and
+[common command parameters](#common-command-parameters).
 
 ## Test task
 Run commands. Fails on first failure command run with check. List of fields:
@@ -276,6 +248,34 @@ test.commands = [
     { cmd = "true", check = true }, # check only this command
 ]
 ```
+
+## Command output
+Controls the redirection of the command output. Fields:
+* `log` - Log output with a provided level;
+* `print` - Print output to stdout.
+For example, print stdout and log with `trace` level;
+```toml
+shell.command = "echo LiL"
+shell.stdout = { print = true, log = "trace" }
+```
+
+## Matches
+It is a formula consisting of `and`, `or` and `err-re`, `out-re`, `any-re`.
+For example, `failure-matches` in a `shell` task;
+```toml
+shell.command = "ls LLM.toml"
+shell.failure-matches = { or = [ { err-re = "LLM" }, { err-re = "toml" }]}
+```
+
+## Common command parameters
+Some common command parameters:
+* `check` - Fails the task if the command fails;
+* `stdin` - Pass a provided string to the command's stdin;
+* `stdout` - [Command output](#command-output) for stdout;
+* `stderr` - [Command output](#command-output) for stderr;
+* `success-codes` - Array of return codes treated as successful termination;
+* `success-matches` - [Matches](#matches) that need to be matched for success;
+* `failure-matches` - [Matches](#matches) that match means failure.
 
 ## Task vars
 It is a table as in [vars](#Vars) or a list of tables as in

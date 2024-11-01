@@ -213,6 +213,16 @@ impl ExecType {
     }
 }
 
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct RunTasklineType {
+    #[serde(default)]
+    #[serde(alias = "tl")]
+    taskline: String,
+    #[serde(default)]
+    module: PathBuf,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
@@ -234,16 +244,6 @@ impl ShellType {
         let out = self.run_out(context, worker, default_cmd_check())?;
         Ok(Value::String(out.stdout()))
     }
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct RunTasklineType {
-    #[serde(default)]
-    #[serde(alias = "tl")]
-    taskline: String,
-    #[serde(default)]
-    module: PathBuf,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -288,11 +288,11 @@ pub struct TestType {
 pub enum TaskType {
     Ensure(EnsureType),
     Exec(ExecType),
-    Shell(ShellType),
     File(FileType),
     Get(GetType),
     RunTaskline(RunTasklineType),
     Run(String),
+    Shell(ShellType),
     Test(TestType),
 }
 
@@ -308,7 +308,6 @@ impl TaskType {
         match self {
             Self::Ensure(ensure) => ensure.ensure(&context),
             Self::Exec(exec) => exec.run(&context, worker),
-            Self::Shell(shell) => shell.run(&context, worker),
             Self::File(FileType { dst, source }) => {
                 let dst = dst.render(&context, "file task dst")?;
                 match source {
@@ -395,6 +394,7 @@ impl TaskType {
 
                 Ok(value)
             }
+            Self::Shell(shell) => shell.run(&context, worker),
             Self::Test(TestType { commands, check }) => {
                 let mut success = true;
 
