@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::cmd::CmdOut;
+use crate::config::CONFIG;
 use crate::error::Error;
 use crate::manifest::Tasklines;
 use crate::matches::Matches;
@@ -129,15 +130,15 @@ impl CmdOutput {
 }
 
 fn default_cmd_stdout() -> CmdOutput {
-    CmdOutput { log: LevelFilter::Trace, print: false }
+    CONFIG.task.command.stdout.to_owned()
 }
 
 fn default_cmd_stderr() -> CmdOutput {
-    CmdOutput { log: LevelFilter::Warn, print: false }
+    CONFIG.task.command.stderr.to_owned()
 }
 
-pub fn default_cmd_check() -> bool {
-    true
+fn default_cmd_check() -> bool {
+    CONFIG.task.command.check
 }
 
 fn default_cmd_success_codes() -> Vec<i32> {

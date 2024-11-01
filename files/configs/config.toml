@@ -6,3 +6,13 @@ install-embedded-modules = true
 
 # Clean workers after successefully run all tasks
 clean = true
+
+
+# Defaults for tasks
+[task]
+
+# Command tasks: common parameters for shell, exec and test tasks
+[task.command]
+check = true
+stdout = { log = "Trace", print = false }
+stderr = { log = "Warn", print = false }
