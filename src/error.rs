@@ -40,6 +40,8 @@ pub enum Error {
     UnknownVarKind(String),
     #[error("unknown variable type `{0}`")]
     UnknownVarType(String),
+    #[error("special task `{0}` does not work on this engine")]
+    UnsupportedSpecialTask(String),
     #[error("cannot use tasklines `{0}` from the `{1}`")]
     UseTasklines(String, PathBuf),
     #[error("cannot use vars `{0}` from the `{1}`")]

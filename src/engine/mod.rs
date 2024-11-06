@@ -17,7 +17,7 @@ use crate::engine::ssh::EngineSsh;
 use crate::engine::vml::EngineVml;
 use crate::error::Error;
 use crate::manifest::Engine as ManifestEngine;
-use crate::task_type::CmdParams;
+use crate::task_type::{CmdParams, SpecialTypeType};
 use crate::template::Context;
 
 mod base;
@@ -247,5 +247,28 @@ impl Engine {
         }
 
         cmd.run()
+    }
+
+    pub fn special<N: AsRef<str>>(
+        &self,
+        name: N,
+        type_: &SpecialTypeType,
+        ignore_unsupported: bool,
+    ) -> Result<()> {
+        match type_ {
+            SpecialTypeType::Restart => match self {
+                Engine::Dbg(dbg) => dbg.restart(name)?,
+                Engine::Docker(docker) => docker.restart(name)?,
+                Engine::Podman(podman) => podman.restart(name)?,
+                Engine::Vml(vml) => vml.restart(name)?,
+                _ => {
+                    if !ignore_unsupported {
+                        bail!(Error::UnsupportedSpecialTask("restart".to_string(),))
+                    }
+                }
+            },
+        };
+
+        Ok(())
     }
 }

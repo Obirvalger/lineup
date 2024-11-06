@@ -107,6 +107,15 @@ impl EngineVml {
         Ok(())
     }
 
+    pub fn restart<S: AsRef<str>>(&self, name: S) -> Result<()> {
+        let vml = &self.vml_cmd;
+        let name = self.n(name);
+
+        run_cmd!($[vml] stop -n $name)?;
+        run_cmd!($[vml] start -n $name)?;
+        Ok(())
+    }
+
     pub fn remove<S: AsRef<str>>(&self, name: S) -> Result<()> {
         let vml = self.vml_cmd.to_owned();
         let name = self.n(name);

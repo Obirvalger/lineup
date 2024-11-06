@@ -161,6 +161,7 @@ There are several types of tasks:
 * [run-taskline](#runTaskline-task) - Run a taskline from the file;
 * [run](#run-task) - Run a taskline;
 * [shell](#shell-task) - Run a command from a shell string;
+* [special](#special-task) - Specific tasks supported by some engins;
 * [test](#test-task) - An array of commands.
 
 ## Ensure task
@@ -224,6 +225,18 @@ vars.packages = [ "apt-repo" ]
 ## Shell task
 Consists of a `command` string with a shell command and
 [common command parameters](#common-command-parameters).
+
+
+## Special task
+There are several types of special tasks:
+* [restart](#special-restart-task) - Restart vm or container.
+
+### Special restart task
+Example of restarting:
+```toml
+[[tasklines.setup]]
+special.restart = {}
+```
 
 ## Test task
 Run commands. Fails on first failure command run with check. List of fields:

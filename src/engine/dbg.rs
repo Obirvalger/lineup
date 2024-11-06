@@ -52,6 +52,12 @@ impl EngineDbg {
         Cmd::new("true")
     }
 
+    pub fn restart<N: AsRef<str>>(&self, name: N) -> Result<()> {
+        println!("Worker {}: restart", name.as_ref());
+
+        Ok(())
+    }
+
     pub fn shell_cmd<N: AsRef<str>, S: AsRef<str>>(&self, name: N, command: S) -> Cmd {
         println!("Worker {}: run shell command `{}`", name.as_ref(), command.as_ref());
 

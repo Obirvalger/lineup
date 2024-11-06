@@ -248,6 +248,25 @@ impl ShellType {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
+pub enum SpecialTypeType {
+    Restart,
+}
+
+fn default_special_ignore_unsupported() -> bool {
+    false
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct SpecialType {
+    #[serde(default = "default_special_ignore_unsupported")]
+    ignore_unsupported: bool,
+    #[serde(flatten)]
+    type_: SpecialTypeType,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub enum TestTypeCommand {
     Exec(ExecType),
@@ -293,6 +312,7 @@ pub enum TaskType {
     RunTaskline(RunTasklineType),
     Run(String),
     Shell(ShellType),
+    Special(SpecialType),
     Test(TestType),
 }
 
@@ -395,6 +415,10 @@ impl TaskType {
                 Ok(value)
             }
             Self::Shell(shell) => shell.run(&context, worker),
+            Self::Special(SpecialType { type_, ignore_unsupported }) => {
+                worker.special(type_, *ignore_unsupported)?;
+                Ok(Value::Null)
+            }
             Self::Test(TestType { commands, check }) => {
                 let mut success = true;
 

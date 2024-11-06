@@ -82,6 +82,15 @@ impl EnginePodman {
         Ok(())
     }
 
+    pub fn restart<S: AsRef<str>>(&self, name: S) -> Result<()> {
+        let podman = &self.podman_bin;
+        let name = self.n(name);
+
+        run_fun!($podman stop $name)?;
+        run_fun!($podman start $name)?;
+        Ok(())
+    }
+
     pub fn remove<S: AsRef<str>>(&self, name: S) -> Result<()> {
         let podman = self.podman_bin.to_string();
         let name = self.n(name);

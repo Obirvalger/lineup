@@ -10,7 +10,7 @@ use crate::error::Error;
 use crate::manifest::DefaultWorker;
 use crate::manifest::Workers as ManifestWorkers;
 use crate::render::Render;
-use crate::task_type::CmdParams;
+use crate::task_type::{CmdParams, SpecialTypeType};
 use crate::template::Context;
 
 #[derive(Clone, Debug)]
@@ -133,5 +133,9 @@ impl Worker {
 
     pub fn shell<S: AsRef<str>>(&self, command: S, params: &CmdParams) -> Result<CmdOut> {
         self.engine.shell(&self.name, command, params)
+    }
+
+    pub fn special(&self, type_: &SpecialTypeType, ignore_unsupported: bool) -> Result<()> {
+        self.engine.special(&self.name, type_, ignore_unsupported)
     }
 }
