@@ -47,7 +47,7 @@ vars.user = "user"
 ```
 
 # Vars
-This is a table with string keys - [var defenition](#var-defenition) and
+This is a table with string keys - [var definition](#var-defenition) and
 values of any type. [Templates](templates.md) in strings are processed.
 For example, a bool variable `build` stores the user's response to a question:
 ```toml
@@ -55,9 +55,9 @@ For example, a bool variable `build` stores the user's response to a question:
 build = "{{ confirm(msg='Do you want to build package?', default=true) }}"
 ```
 
-## Var defenition
-Variable defined by string containg vairable name with optional [type](#var-type) suffix
-and [kind](#var-kind) prefix.
+## Var definition
+Variable defined by string containing variable name with optional
+[type](#var-type) suffix and [kind](#var-kind) prefix.
 
 ## Var type
 Variable type writes after variable name delimited by `:`.
@@ -90,7 +90,7 @@ Example of appending `-m` to the flags array:
 ```toml
 vars."json % flags" = "{{ flags | concat(with='-m') | json }}"
 ```
-Example of storing empty array to a `fs` vaiable `fs_var`:
+Example of storing empty array to a `fs` variable `fs_var`:
 ```toml
 vars."fs % fs_var" = []
 ```
@@ -249,7 +249,7 @@ test.commands = [
     { cmd = "echo lal >&2", stderr = { print = true } },
 ]
 ```
-Example of runnig several success of failure commands with check disabled by
+Example of running several success of failure commands with check disabled by
 default:
 ```toml
 test.check = false
