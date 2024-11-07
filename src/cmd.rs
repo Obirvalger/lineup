@@ -114,6 +114,10 @@ impl CmdOut {
         }
     }
 
+    pub fn rc(&self) -> Option<i32> {
+        self.inner.status.code()
+    }
+
     pub fn stdout(&self) -> String {
         String::from_utf8_lossy(&self.inner.stdout).to_string()
     }

@@ -136,6 +136,72 @@ impl CmdOutput {
     }
 }
 
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+enum CmdParamsResultStream {
+    #[default]
+    Stdout,
+    Stderr,
+}
+
+fn default_cmd_params_result_lines() -> bool {
+    true
+}
+
+fn default_cmd_params_result_strip() -> bool {
+    true
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+pub struct CmdParamsResult {
+    #[serde(default = "default_cmd_params_result_lines")]
+    lines: bool,
+    #[serde(default)]
+    #[serde(alias = "rc")]
+    return_code: bool,
+    #[serde(default)]
+    stream: CmdParamsResultStream,
+    #[serde(default = "default_cmd_params_result_strip")]
+    strip: bool,
+}
+
+impl CmdParamsResult {
+    fn get(&self, out: CmdOut) -> Value {
+        if self.return_code {
+            return out.rc().map(|c| c.into()).unwrap_or(Value::Null);
+        }
+
+        let mut result = match self.stream {
+            CmdParamsResultStream::Stdout => out.stdout(),
+            CmdParamsResultStream::Stderr => out.stderr(),
+        };
+
+        if self.strip {
+            result = result.trim_end().to_string();
+        }
+
+        if self.lines {
+            let a = result.lines().map(|l| Value::String(l.to_string())).collect::<Vec<_>>();
+            Value::Array(a)
+        } else {
+            Value::String(result)
+        }
+    }
+}
+
+impl Default for CmdParamsResult {
+    fn default() -> Self {
+        Self {
+            lines: default_cmd_params_result_lines(),
+            return_code: Default::default(),
+            stream: Default::default(),
+            strip: default_cmd_params_result_strip(),
+        }
+    }
+}
+
 fn default_cmd_stdout() -> CmdOutput {
     CONFIG.task.command.stdout.to_owned()
 }
@@ -156,6 +222,8 @@ fn default_cmd_success_codes() -> Vec<i32> {
 #[serde(rename_all = "kebab-case")]
 pub struct CmdParams {
     pub check: Option<bool>,
+    #[serde(default)]
+    pub result: CmdParamsResult,
     pub stdin: Option<String>,
     #[serde(default = "default_cmd_stdout")]
     pub stdout: CmdOutput,
@@ -188,6 +256,7 @@ impl Default for CmdParams {
     fn default() -> CmdParams {
         CmdParams {
             check: Default::default(),
+            result: Default::default(),
             stdin: Default::default(),
             stdout: default_cmd_stdout(),
             stderr: default_cmd_stderr(),
@@ -216,7 +285,7 @@ impl ExecType {
 
     pub fn run(&self, context: &Context, worker: &Worker) -> Result<Value> {
         let out = self.run_out(context, worker, default_cmd_check())?;
-        Ok(Value::String(out.stdout()))
+        Ok(self.params.result.get(out))
     }
 }
 
@@ -249,7 +318,7 @@ impl ShellType {
 
     pub fn run(&self, context: &Context, worker: &Worker) -> Result<Value> {
         let out = self.run_out(context, worker, default_cmd_check())?;
-        Ok(Value::String(out.stdout()))
+        Ok(self.params.result.get(out))
     }
 }
 

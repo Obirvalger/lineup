@@ -203,7 +203,8 @@ ensure.vars = ["user", "vars.lil"]
 Consists of an `args` array of strings represented command and
 [common command parameters](#Common-command-parameters).
 
-**Return:** stdout of running command.
+**Return:** output of running command. Controll output processing by
+[command parameters result](#Command-parameters-result).
 
 Example of showing date in utc:
 ```toml
@@ -272,7 +273,8 @@ vars.packages = [ "apt-repo" ]
 Consists of a `command` string with a shell command and
 [common command parameters](#Common-command-parameters).
 
-**Return:** stdout of running command.
+**Return:** output of running command. Controll output processing by
+[command parameters result](#Command-parameters-result).
 
 Example of running echo command:
 ```toml
@@ -321,12 +323,20 @@ test.commands = [
 ## Common command parameters
 Some common command parameters:
 * `check` - Fails the task if the command fails;
+* [result](#Command-parameters-result) - Specify result value;
 * `stdin` - Pass a provided string to the command's stdin;
 * `stdout` - [Command output](#Command-output) for stdout;
 * `stderr` - [Command output](#Command-output) for stderr;
 * `success-codes` - Array of return codes treated as successful termination;
 * `success-matches` - [Matches](#Matches) that need to be matched for success;
 * `failure-matches` - [Matches](#Matches) that match means failure.
+
+### Command parameters result
+Configure returned result. It has several fields:
+* `lines` - Split output stream to an array of lines or return a string;
+* `return-code` - Return just rc if true;
+* `stream` - Set stream `stdout`(by default) or `stderr`;
+* `strip` - Strip trailing whitespace symbols.
 
 ### Command output
 Controls the redirection of the command output. Fields:
