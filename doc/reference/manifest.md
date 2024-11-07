@@ -95,6 +95,13 @@ Example of storing empty array to a `fs` variable `fs_var`:
 vars."fs % fs_var" = []
 ```
 
+## Special variables
+There are list of special variable set by lineup:
+* [item](#Items) - Current item;
+* [result](#task-result) - Result of previously run task;
+* [taskline](#Tasklines) - Name of the current taskline;
+* [worker](#Workers) - Name of the current worker.
+
 
 # Workers
 Workers describe runners of tasks (e.g. containers or virtual machines).
@@ -152,6 +159,10 @@ Tasks are defined by a [task type](#task-types) and have some parameters:
 * `clean-vars` - If true, run task without previously defined variables;
 * `table` - Table.
 
+## Task result
+Every task set a `result` variable, contained a result of the task running.
+If `result` variable is not set it has `null` value.
+
 ## Task types
 There are several types of tasks:
 * [ensure](#ensure-task) - Ensure taskline could be run;
@@ -161,11 +172,12 @@ There are several types of tasks:
 * [run-taskline](#runTaskline-task) - Run a taskline from the file;
 * [run](#run-task) - Run a taskline;
 * [shell](#shell-task) - Run a command from a shell string;
-* [special](#special-task) - Specific tasks supported by some engins;
+* [special](#special-task) - Specific tasks supported by some engines;
 * [test](#test-task) - An array of commands.
 
 ## Ensure task
 It has field `vars` with an array of variable names. Check them to be set.
+**Return:** `true`.
 Example of ensuring two variable `user` and `vars.lil` are set:
 ```toml
 ensure.vars = ["user", "vars.lil"]
@@ -174,6 +186,7 @@ ensure.vars = ["user", "vars.lil"]
 ## Exec task
 Consists of an `args` array of strings represented command and
 [common command parameters](#common-command-parameters).
+**Return:** stdout of running command.
 
 ## File task
 A file task has several fields:
@@ -185,6 +198,7 @@ Example of creating `/tmp/test-file` on the worker:
 file.dst = "/tmp/test-file"
 file.content = "Test"
 ```
+**Return:** `dst`.
 
 ## Get task
 A get task has several fields:
@@ -195,10 +209,11 @@ Example of getting `/etc/os-release` from the worker:
 ```toml
 get.src = "/etc/os-release"
 ```
+**Return:** `dst`.
 
 ## Run task
 Run a taskline from manifest tasklines.
-
+**Return:** `result` of last task in taskline.
 Example of a task installing `apt-repo` with `apt-get`:
 ```toml
 [use]
@@ -215,7 +230,7 @@ Run a taskline from a file. Field:
 * `taskline` - Name of the taskline (default is "");
 * `module` - Name of a [module](modules.md). Or path to the file containing
     the taskline, if it starts with `/` or `.`, it is interpreted as a path.
-
+**Return:** `result` of last task in taskline.
 Example of a task installing `apt-repo` with `apt-get`:
 ```toml
 run-taskline = { module = "apt-get", taskline = "install" }
@@ -225,11 +240,13 @@ vars.packages = [ "apt-repo" ]
 ## Shell task
 Consists of a `command` string with a shell command and
 [common command parameters](#common-command-parameters).
+**Return:** stdout of running command.
 
 
 ## Special task
 There are several types of special tasks:
 * [restart](#special-restart-task) - Restart vm or container.
+**Return:** `null`.
 
 ### Special restart task
 Example of restarting:
