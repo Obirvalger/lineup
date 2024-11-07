@@ -47,7 +47,7 @@ vars.user = "user"
 ```
 
 # Vars
-This is a table with string keys - [var definition](#var-defenition) and
+This is a table with string keys - [var definition](#Var-defenition) and
 values of any type. [Templates](templates.md) in strings are processed.
 For example, a bool variable `build` stores the user's response to a question:
 ```toml
@@ -57,7 +57,7 @@ build = "{{ confirm(msg='Do you want to build package?', default=true) }}"
 
 ## Var definition
 Variable defined by string containing variable name with optional
-[type](#var-type) suffix and [kind](#var-kind) prefix.
+[type](#Var-type) suffix and [kind](#Var-kind) prefix.
 
 ## Var type
 Variable type writes after variable name delimited by `:`.
@@ -70,8 +70,9 @@ There are possible types:
 * `string`, `s`;
 * `array`, `a`;
 * `object`, `o`.
+
 Type union can be created by writing several types separated by `|`.
-For example, [ensure](#ensure-task) variable `packages` should be `array` or
+For example, [ensure](#Ensure-task) variable `packages` should be `array` or
 `string` in `install` taskline:
 ```toml
 [[tasklines.install]]
@@ -98,7 +99,7 @@ vars."fs % fs_var" = []
 ## Special variables
 There are list of special variable set by lineup:
 * [item](#Items) - Current item;
-* [result](#task-result) - Result of previously run task;
+* [result](#Task-result) - Result of previously run task;
 * [taskline](#Tasklines) - Name of the current taskline;
 * [worker](#Workers) - Name of the current worker.
 
@@ -150,12 +151,12 @@ By default, tasks run on all workers.
 
 
 # Task
-Tasks are defined by a [task type](#task-types) and have some parameters:
+Tasks are defined by a [task type](#Task-types) and have some parameters:
 * `condition` - A shell command running on the worker.
     The task does not run if this fails;
 * `parallel` - A bool controlling whether to run items tasks in parallel;
     [items](#Items) tasks should be executed in parallel;
-* [vars](#task-vars) - Set variables;
+* [vars](#Task-vars) - Set variables;
 * `clean-vars` - If true, run task without previously defined variables;
 * `table` - Table.
 
@@ -165,21 +166,23 @@ If `result` variable is not set it has `null` value.
 
 ## Task types
 There are several types of tasks:
-* [dummy](#dummy-task) - Do nothing;
-* [ensure](#ensure-task) - Ensure taskline could be run;
-* [exec](#exec-task) - Run a command from an args array;
-* [file](#file-task) - Copy a file to the worker;
-* [get](#get-task) - Copy a file from the worker;
-* [run-taskline](#runTaskline-task) - Run a taskline from the file;
-* [run](#run-task) - Run a taskline;
-* [shell](#shell-task) - Run a command from a shell string;
-* [special](#special-task) - Specific tasks supported by some engines;
-* [test](#test-task) - An array of commands.
+* [dummy](#Dummy-task) - Do nothing;
+* [ensure](#Ensure-task) - Ensure taskline could be run;
+* [exec](#Exec-task) - Run a command from an args array;
+* [file](#File-task) - Copy a file to the worker;
+* [get](#Get-task) - Copy a file from the worker;
+* [run-taskline](#RunTaskline-task) - Run a taskline from the file;
+* [run](#Run-task) - Run a taskline;
+* [shell](#Shell-task) - Run a command from a shell string;
+* [special](#Special-task) - Specific tasks supported by some engines;
+* [test](#Test-task) - An array of commands.
 
 ## Dummy task
 The only one parameter `result` specifies return value. By default it is
 previous `result`.
+
 **Return:** `result`.
+
 Example of saving fs var and returning unchanged result:
 ```toml
 dummy = {}
@@ -188,7 +191,9 @@ vars."fs % fs_var" = "LiL"
 
 ## Ensure task
 It has field `vars` with an array of variable names. Check them to be set.
+
 **Return:** `true`.
+
 Example of ensuring two variable `user` and `vars.lil` are set:
 ```toml
 ensure.vars = ["user", "vars.lil"]
@@ -196,35 +201,48 @@ ensure.vars = ["user", "vars.lil"]
 
 ## Exec task
 Consists of an `args` array of strings represented command and
-[common command parameters](#common-command-parameters).
+[common command parameters](#Common-command-parameters).
+
 **Return:** stdout of running command.
+
+Example of showing date in utc:
+```toml
+exec.args = ["date", "--utc"]
+exec.stdout.print = true
+```
 
 ## File task
 A file task has several fields:
 * `dst` - Destination path on worker to store the file;
 * `src` - Source path on host to get the file;
 * `content` - String with contents of the file.
+
+**Return:** `dst`.
+
 Example of creating `/tmp/test-file` on the worker:
 ```toml
 file.dst = "/tmp/test-file"
 file.content = "Test"
 ```
-**Return:** `dst`.
 
 ## Get task
 A get task has several fields:
 * `src` - Source path on worker to get the file;
 * `dst` - Destination path on host to store the file. By default store file
     in the same directory as manifest located with a source file name.
+
+**Return:** `dst`.
+
 Example of getting `/etc/os-release` from the worker:
 ```toml
 get.src = "/etc/os-release"
 ```
-**Return:** `dst`.
 
 ## Run task
 Run a taskline from manifest tasklines.
+
 **Return:** `result` of last task in taskline.
+
 Example of a task installing `apt-repo` with `apt-get`:
 ```toml
 [use]
@@ -241,7 +259,9 @@ Run a taskline from a file. Field:
 * `taskline` - Name of the taskline (default is "");
 * `module` - Name of a [module](modules.md). Or path to the file containing
     the taskline, if it starts with `/` or `.`, it is interpreted as a path.
+
 **Return:** `result` of last task in taskline.
+
 Example of a task installing `apt-repo` with `apt-get`:
 ```toml
 run-taskline = { module = "apt-get", taskline = "install" }
@@ -250,13 +270,21 @@ vars.packages = [ "apt-repo" ]
 
 ## Shell task
 Consists of a `command` string with a shell command and
-[common command parameters](#common-command-parameters).
+[common command parameters](#Common-command-parameters).
+
 **Return:** stdout of running command.
+
+Example of running echo command:
+```toml
+shell.command = "echo LiL"
+shell.stdout.print = true
+```
 
 
 ## Special task
 There are several types of special tasks:
-* [restart](#special-restart-task) - Restart vm or container.
+* [restart](#Special-restart-task) - Restart vm or container.
+
 **Return:** `null`.
 
 ### Special restart task
@@ -290,7 +318,17 @@ test.commands = [
 ]
 ```
 
-## Command output
+## Common command parameters
+Some common command parameters:
+* `check` - Fails the task if the command fails;
+* `stdin` - Pass a provided string to the command's stdin;
+* `stdout` - [Command output](#Command-output) for stdout;
+* `stderr` - [Command output](#Command-output) for stderr;
+* `success-codes` - Array of return codes treated as successful termination;
+* `success-matches` - [Matches](#Matches) that need to be matched for success;
+* `failure-matches` - [Matches](#Matches) that match means failure.
+
+### Command output
 Controls the redirection of the command output. Fields:
 * `log` - Log output with a provided level;
 * `print` - Print output to stdout.
@@ -300,7 +338,7 @@ shell.command = "echo LiL"
 shell.stdout = { print = true, log = "trace" }
 ```
 
-## Matches
+### Matches
 It is a formula consisting of `and`, `or` and `err-re`, `out-re`, `any-re`.
 For example, `failure-matches` in a `shell` task;
 ```toml
@@ -308,19 +346,9 @@ shell.command = "ls LLM.toml"
 shell.failure-matches = { or = [ { err-re = "LLM" }, { err-re = "toml" }]}
 ```
 
-## Common command parameters
-Some common command parameters:
-* `check` - Fails the task if the command fails;
-* `stdin` - Pass a provided string to the command's stdin;
-* `stdout` - [Command output](#command-output) for stdout;
-* `stderr` - [Command output](#command-output) for stderr;
-* `success-codes` - Array of return codes treated as successful termination;
-* `success-matches` - [Matches](#matches) that need to be matched for success;
-* `failure-matches` - [Matches](#matches) that match means failure.
-
 ## Task vars
 It is a table as in [vars](#Vars) or a list of tables as in
-[extend vars](#extend-vars). Example of creating a shell task in a taskline
+[extend vars](#Extend-vars). Example of creating a shell task in a taskline
 and setting a variable `target` and a `path` variable, which uses `target`:
 ```toml
 [[taskline]]
@@ -340,12 +368,12 @@ Most engines have base fields:
     `fail`, `ignore` and `replace`.
 
 There are several types of engines:
-* [dbg](#dbg-engine);
-* [docker](#docker-engine);
-* [host](#host-engine);
-* [podman](#podman-engine).
-* [ssh](#ssh-engine);
-* [vml](#vml-engine).
+* [dbg](#Dbg-engine);
+* [docker](#Docker-engine);
+* [host](#Host-engine);
+* [podman](#Podman-engine).
+* [ssh](#Ssh-engine);
+* [vml](#Vml-engine).
 
 
 ## Dbg engine
@@ -438,7 +466,7 @@ mem = "2G"
 
 
 # Items
-Items are used to multiply [workers](#worker-items) or [tasks](#task-items).
+Items are used to multiply [workers](#Worker-items) or [tasks](#Task-items).
 It sets a [template](templates.md) variable `item`, which can be used in
 strings as `{{ item }}`. Items could be one of three forms:
 1. Array of strings or integers
@@ -480,7 +508,7 @@ parallel = false
 # Extend
 This section provides additional functionality to some other sections.
 Consists of:
-* [vars](#extend-vars).
+* [vars](#Extend-vars).
 
 ## Extend vars
 Field `maps` gets a list of tables containing variables. Every element of the
