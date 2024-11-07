@@ -22,6 +22,13 @@ use crate::worker::Worker;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
+pub struct DummyType {
+    #[serde(default)]
+    pub result: Option<Value>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct EnsureType {
     #[serde(default)]
     pub vars: Vec<Var>,
@@ -305,6 +312,7 @@ pub struct TestType {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TaskType {
+    Dummy(DummyType),
     Ensure(EnsureType),
     Exec(ExecType),
     File(FileType),
@@ -326,6 +334,13 @@ impl TaskType {
     ) -> Result<Value> {
         let mut context = context.to_owned();
         match self {
+            Self::Dummy(dummy) => {
+                if let Some(result) = &dummy.result {
+                    result.render(&context, "dummy result")
+                } else {
+                    Ok(context.get("result").cloned().unwrap_or(Value::Null))
+                }
+            }
             Self::Ensure(ensure) => ensure.ensure(&context),
             Self::Exec(exec) => exec.run(&context, worker),
             Self::File(FileType { dst, source }) => {

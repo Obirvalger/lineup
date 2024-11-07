@@ -165,6 +165,7 @@ If `result` variable is not set it has `null` value.
 
 ## Task types
 There are several types of tasks:
+* [dummy](#dummy-task) - Do nothing;
 * [ensure](#ensure-task) - Ensure taskline could be run;
 * [exec](#exec-task) - Run a command from an args array;
 * [file](#file-task) - Copy a file to the worker;
@@ -174,6 +175,16 @@ There are several types of tasks:
 * [shell](#shell-task) - Run a command from a shell string;
 * [special](#special-task) - Specific tasks supported by some engines;
 * [test](#test-task) - An array of commands.
+
+## Dummy task
+The only one parameter `result` specifies return value. By default it is
+previous `result`.
+**Return:** `result`.
+Example of saving fs var and returning unchanged result:
+```toml
+dummy = {}
+vars."fs % fs_var" = "LiL"
+```
 
 ## Ensure task
 It has field `vars` with an array of variable names. Check them to be set.
