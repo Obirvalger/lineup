@@ -183,6 +183,9 @@ impl Runner {
     }
 
     pub fn run(&mut self) -> Result<()> {
+        if self.workers.is_empty() {
+            bail!(Error::NoWorkers)
+        }
         let mut context = Context::new();
         context.insert("result", &Value::Null);
         context.extend(self.vars.context()?);
