@@ -1,0 +1,14 @@
+# Create worker `host-worker` with host engine
+workers.host-worker.engine = "host"
+
+
+[[taskline]]
+# In most strings allowed templates
+shell.cmd = "echo Hi from {{ worker }}!"
+# By default command's output just logged
+shell.stdout.print = true
+
+
+# Lineup runs tasks from a taskset. If not set, default taskset created:
+# [taskset."Run taskline"]
+# run-taskline = {}
