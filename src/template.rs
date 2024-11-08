@@ -4,7 +4,7 @@ use std::path::PathBuf;
 pub use tera::Context;
 
 use anyhow::Context as AnyhowContext;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use cmd_lib::run_fun;
 use inquire::Confirm;
 use lazy_static::lazy_static;
@@ -13,11 +13,27 @@ use serde_json::{to_string, to_string_pretty};
 use tera::Tera;
 
 use crate::cmd::Cmd;
+use crate::error::Error;
 use crate::fs_var::FsVar;
 use crate::tmpdir::TMPDIR;
 
 fn wrap_error(error: anyhow::Error) -> tera::Error {
     tera::Error::msg(error)
+}
+
+type FilterAnyhow = Box<dyn Fn(&Value, &HashMap<String, Value>) -> Result<Value> + Sync + Send>;
+type FilterTera =
+    Box<dyn Fn(&Value, &HashMap<String, Value>) -> tera::Result<Value> + Sync + Send>;
+
+fn wrap_filter(f: FilterAnyhow) -> FilterTera {
+    Box::new(move |value, args| f(value, args).map_err(wrap_error))
+}
+
+type FunctionAnyhow = Box<dyn Fn(&HashMap<String, Value>) -> Result<Value> + Sync + Send>;
+type FunctionTera = Box<dyn Fn(&HashMap<String, Value>) -> tera::Result<Value> + Sync + Send>;
+
+fn wrap_function(f: FunctionAnyhow) -> FunctionTera {
+    Box::new(move |args| f(args).map_err(wrap_error))
 }
 
 fn basename(value: &Value, _args: &HashMap<String, Value>) -> tera::Result<Value> {
@@ -63,20 +79,20 @@ fn dirname(value: &Value, _args: &HashMap<String, Value>) -> tera::Result<Value>
     }
 }
 
-fn fs_helper(name: &str) -> tera::Result<Value> {
-    let fs_var = FsVar::new(name).map_err(wrap_error)?;
+fn fs_helper(name: &str) -> Result<Value> {
+    let fs_var = FsVar::new(name)?;
     if !fs_var.exists() {
-        return Err(format!("Fs var `{}` does not exist", name).into());
+        bail!(Error::NoFsVar(name.to_string()));
     }
 
-    fs_var.read().map_err(wrap_error)
+    fs_var.read()
 }
 
-fn fs_filter(value: &Value, _: &HashMap<String, Value>) -> tera::Result<Value> {
+fn fs_filter(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
     let error_not_support = "Value of not supported type";
     match value {
         Value::String(name) => fs_helper(name),
-        _ => Err(error_not_support.into()),
+        _ => bail!(error_not_support),
     }
 }
 
@@ -173,15 +189,15 @@ fn confirm(args: &HashMap<String, Value>) -> tera::Result<Value> {
     }
 }
 
-fn fs_function(args: &HashMap<String, Value>) -> tera::Result<Value> {
+fn fs_function(args: &HashMap<String, Value>) -> Result<Value> {
     let error_not_support = "Value of not supported type";
     let name = match args.get("name") {
         Some(val) => val,
-        None => return Err(tera::Error::msg("Function `fs` didn't receive a `name` argument")),
+        None => bail!("Function `fs` didn't receive a `name` argument"),
     };
     match name {
         Value::String(name) => fs_helper(name),
-        _ => Err(error_not_support.into()),
+        _ => bail!(error_not_support),
     }
 }
 
@@ -288,7 +304,7 @@ pub fn render<S: ToString, P: AsRef<str>>(
             tera.register_filter("basename", basename);
             tera.register_filter("cond", cond);
             tera.register_filter("dirname", dirname);
-            tera.register_filter("fs", fs_filter);
+            tera.register_filter("fs", wrap_filter(Box::new(fs_filter)));
             tera.register_filter("is_empty", is_empty);
             tera.register_filter("j", json_encode);
             tera.register_filter("json", json_encode);
@@ -296,7 +312,7 @@ pub fn render<S: ToString, P: AsRef<str>>(
             tera.register_filter("quote", quote);
 
             tera.register_function("confirm", confirm);
-            tera.register_function("fs", fs_function);
+            tera.register_function("fs", wrap_function(Box::new(fs_function)));
             tera.register_function("host_cmd", host_cmd);
             tera.register_function("tmpdir", tmpdir);
             tera

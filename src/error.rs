@@ -34,6 +34,8 @@ pub enum Error {
     GetSrcFilename(PathBuf),
     #[error("no engine provided to worker `{0}`")]
     NoEngine(String),
+    #[error("Fs variable `{0}` does not exist")]
+    NoFsVar(String),
     #[error("workers should be set")]
     NoWorkers,
     #[error("failed tsort in {0}")]
