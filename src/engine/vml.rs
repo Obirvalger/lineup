@@ -112,7 +112,7 @@ impl EngineVml {
         let name = self.n(name);
 
         run_cmd!($[vml] stop -n $name)?;
-        run_cmd!($[vml] start -n $name)?;
+        run_cmd!($[vml] start --no-ssh -n $name)?;
         Ok(())
     }
 
