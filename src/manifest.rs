@@ -282,6 +282,7 @@ pub struct Extend {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 pub struct Manifest {
     #[serde(default)]
