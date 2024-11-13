@@ -46,6 +46,7 @@ impl Worker {
         manifest_workers: &ManifestWorkers,
         default: &DefaultWorker,
         context: &Context,
+        dir: &Path,
     ) -> Result<Vec<Self>> {
         let mut workers = BTreeSet::new();
         let mut context = context.to_owned();
@@ -83,7 +84,7 @@ impl Worker {
                     .as_ref()
                     .or(default.engine.as_ref())
                     .ok_or_else(|| Error::NoEngine(name.to_string()))?;
-                let engine = Engine::from_manifest_engine(&context, engine)?;
+                let engine = Engine::from_manifest_engine(&context, engine, dir)?;
                 workers.insert(Worker { name, engine, setup: false, workdir: PathBuf::default() });
             }
         }

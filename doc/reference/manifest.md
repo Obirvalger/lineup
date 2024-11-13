@@ -402,6 +402,7 @@ mem = "4G"
 ## Docker engine
 Container engine using docker.
 Docker specific options are:
+* `load` - Path to saved image tarball to load;
 * `memory` - Amount of memory;
 * `image` - Image;
 * `user` - User.
@@ -426,6 +427,7 @@ engine = "host"
 ## Podman engine
 Container engine using podman.
 Podman specific options are:
+* `load` - Path to saved image tarball to load;
 * `memory` - Amount of memory;
 * `image` - Image;
 * `pod` - Pod;

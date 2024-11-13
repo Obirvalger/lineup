@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use cmd_lib::{run_cmd, run_fun};
@@ -13,17 +13,20 @@ use crate::template::Context;
 pub struct EnginePodman {
     pub memory: Option<String>,
     pub image: String,
+    pub load: Option<PathBuf>,
     pub pod: Option<String>,
     pub user: Option<String>,
     pub exists: ExistsAction,
     pub base: EngineBase,
     podman_bin: String,
+    dir: PathBuf,
 }
 
 impl EnginePodman {
     pub fn from_manifest_engine(
         context: &Context,
         manifest_engine_podman: &ManifestEnginePodman,
+        dir: &Path,
     ) -> Result<Self> {
         let manifest_engine_podman =
             manifest_engine_podman.render(context, "worker in manifest")?;
@@ -32,11 +35,13 @@ impl EnginePodman {
         Ok(Self {
             memory: manifest_engine_podman.memory,
             image: manifest_engine_podman.image,
+            load: manifest_engine_podman.load,
             pod: manifest_engine_podman.pod,
             user: manifest_engine_podman.user,
             exists: manifest_engine_podman.exists,
             base: manifest_engine_podman.base,
             podman_bin,
+            dir: dir.to_owned(),
         })
     }
 
@@ -44,6 +49,11 @@ impl EnginePodman {
         let podman = self.podman_bin.to_string();
         let image = self.image.to_string();
         let name = self.n(name);
+
+        if let Some(load) = &self.load {
+            let load = if load.is_absolute() { load.to_owned() } else { self.dir.join(load) };
+            run_fun!($podman load -qi $load)?;
+        }
 
         let mut options = vec!["-dt".to_string()];
         if let Some(memory) = &self.memory {

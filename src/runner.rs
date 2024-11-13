@@ -155,7 +155,7 @@ impl Runner {
         tasklines.extend(manifest_tasklines);
 
         let workers =
-            Worker::from_manifest_workers(&manifest.workers, &defaults.worker, &context)?;
+            Worker::from_manifest_workers(&manifest.workers, &defaults.worker, &context, &dir)?;
         let worker_exists = None;
         let skip_tasks = vec![];
 

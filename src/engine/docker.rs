@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use cmd_lib::{run_cmd, run_fun};
@@ -13,16 +13,19 @@ use crate::template::Context;
 pub struct EngineDocker {
     pub memory: Option<String>,
     pub image: String,
+    pub load: Option<PathBuf>,
     pub user: Option<String>,
     pub exists: ExistsAction,
     pub base: EngineBase,
     docker_bin: String,
+    dir: PathBuf,
 }
 
 impl EngineDocker {
     pub fn from_manifest_engine(
         context: &Context,
         manifest_engine_docker: &ManifestEngineDocker,
+        dir: &Path,
     ) -> Result<Self> {
         let manifest_engine_docker =
             manifest_engine_docker.render(context, "worker in manifest")?;
@@ -31,10 +34,12 @@ impl EngineDocker {
         Ok(Self {
             memory: manifest_engine_docker.memory,
             image: manifest_engine_docker.image,
+            load: manifest_engine_docker.load,
             user: manifest_engine_docker.user,
             exists: manifest_engine_docker.exists,
             base: manifest_engine_docker.base,
             docker_bin,
+            dir: dir.to_owned(),
         })
     }
 
@@ -42,6 +47,11 @@ impl EngineDocker {
         let docker = self.docker_bin.to_string();
         let image = self.image.to_string();
         let name = self.n(name);
+
+        if let Some(load) = &self.load {
+            let load = if load.is_absolute() { load.to_owned() } else { self.dir.join(load) };
+            run_fun!($docker load -qi $load)?;
+        }
 
         let mut options = vec!["-dt".to_string()];
         if let Some(memory) = &self.memory {

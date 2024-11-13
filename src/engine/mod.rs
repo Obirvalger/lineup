@@ -63,15 +63,16 @@ impl Engine {
     pub fn from_manifest_engine(
         context: &Context,
         manifest_engine: &ManifestEngine,
+        dir: &Path,
     ) -> Result<Engine> {
         let engine = match manifest_engine {
             ManifestEngine::Dbg(_) => Engine::Dbg(EngineDbg { base: EngineBase::default() }),
             ManifestEngine::Docker(manifest_engine_docker) => Engine::Docker(
-                EngineDocker::from_manifest_engine(context, manifest_engine_docker)?,
+                EngineDocker::from_manifest_engine(context, manifest_engine_docker, dir)?,
             ),
             ManifestEngine::Host => Engine::Host(EngineHost { base: EngineBase::default() }),
             ManifestEngine::Podman(manifest_engine_podman) => Engine::Podman(
-                EnginePodman::from_manifest_engine(context, manifest_engine_podman)?,
+                EnginePodman::from_manifest_engine(context, manifest_engine_podman, dir)?,
             ),
             ManifestEngine::Ssh(manifest_engine_ssh) => {
                 Engine::Ssh(EngineSsh::from_manifest_engine(context, manifest_engine_ssh)?)

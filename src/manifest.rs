@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::path::PathBuf;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -155,6 +156,7 @@ pub struct EngineDocker {
     #[serde(alias = "mem")]
     pub memory: Option<String>,
     pub image: String,
+    pub load: Option<PathBuf>,
     pub user: Option<String>,
     #[serde(default)]
     pub exists: ExistsAction,
@@ -168,9 +170,10 @@ impl Render for EngineDocker {
         let place = format!("docker engine in {}", place.as_ref());
         let memory = self.memory.render(context, format!("memory in {}", place))?;
         let image = self.image.render(context, format!("image in {}", place))?;
+        let load = self.load.render(context, format!("load in {}", place))?;
         let user = self.user.render(context, format!("user in {}", place))?;
         let base = self.base.render(context, format!("base in {}", place))?;
-        Ok(Self { memory, image, user, base, ..self.to_owned() })
+        Ok(Self { memory, image, load, user, base, ..self.to_owned() })
     }
 }
 
@@ -181,6 +184,7 @@ pub struct EnginePodman {
     #[serde(alias = "mem")]
     pub memory: Option<String>,
     pub image: String,
+    pub load: Option<PathBuf>,
     pub pod: Option<String>,
     pub user: Option<String>,
     #[serde(default)]
@@ -195,10 +199,11 @@ impl Render for EnginePodman {
         let place = format!("podman engine in {}", place.as_ref());
         let memory = self.memory.render(context, format!("memory in {}", place))?;
         let image = self.image.render(context, format!("image in {}", place))?;
+        let load = self.load.render(context, format!("load in {}", place))?;
         let pod = self.pod.render(context, format!("pod in {}", place))?;
         let user = self.user.render(context, format!("user in {}", place))?;
         let base = self.base.render(context, format!("base in {}", place))?;
-        Ok(Self { memory, image, pod, user, base, ..self.to_owned() })
+        Ok(Self { memory, image, load, pod, user, base, ..self.to_owned() })
     }
 }
 
