@@ -1,0 +1,75 @@
+# Use tasklines or variables from modules or other manifests
+[use]
+tasklines = ["apt-get", "systemctl"]
+
+
+# Variables used in all manifest
+[vars]
+rootfs = """\
+https://ftp.altlinux.org/pub/distributions/ALTLinux/images/Sisyphus/cloud/x86_64/\
+alt-sisyphus-rootfs-minimal-x86_64.tar.xz\
+"""
+image = "localhost/linup-example/test"
+
+
+[workers.builder.engine.vml]
+# Vml parent to not mix up with user vms
+parent = "lineup-example"
+user = "root"
+image = "alt-sisyphus"
+mem = "1G"
+
+[workers.runner.engine.podman]
+# Load image from tarball
+load = "test.tar"
+image = "{{ image }}"
+
+
+[[tasklines.build]]
+run = "apt-get.install"
+vars.packages = ["buildkit", "wget"]
+
+[[tasklines.build]]
+# Restart vm to run systemd services correctly
+special.restart = {}
+
+[[tasklines.build]]
+run = "systemctl.enable"
+vars.services = ["buildkit"]
+
+[[tasklines.build]]
+name = "Download rootfs {{ rootfs }}"
+shell.cmd = "mkdir -p bdir; cd bdir; wget --no-verbose {{ rootfs }}"
+
+[[tasklines.build]]
+file.dst = "/root/bdir/Dockerfile"
+file.content = """\
+FROM scratch
+ADD alt-sisyphus-rootfs-minimal-x86_64.tar.xz /
+RUN true > /etc/security/limits.d/50-defaults.conf
+CMD ["/bin/bash"]
+"""
+
+[[tasklines.build]]
+name = "Create image tarball"
+shell.cmd = """\
+buildctl build \
+--frontend=dockerfile.v0 \
+--local context=bdir \
+--local dockerfile=bdir \
+--output type=oci,dest=test.tar,name={{ image }}\
+"""
+
+[[tasklines.build]]
+get.src = "/root/test.tar"
+
+
+[taskset."Build container"]
+workers = ["builder"]
+run = "build"
+
+[taskset."Run command in container"]
+requires = ["Build container"]
+workers = ["runner"]
+shell.cmd = "date"
+shell.stdout.print = true

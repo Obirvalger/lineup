@@ -1,2 +1,3 @@
 /target
 *.bak
+doc/examples/build-then-run-container/test.tar
