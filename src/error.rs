@@ -32,6 +32,8 @@ pub enum Error {
     EnsureAbsentVars(String, String),
     #[error("get task's src `{0}` has no filename")]
     GetSrcFilename(PathBuf),
+    #[error("required argument `{0}` is not set")]
+    NoArgument(String),
     #[error("no engine provided to worker `{0}`")]
     NoEngine(String),
     #[error("Fs variable `{0}` does not exist")]
@@ -52,6 +54,8 @@ pub enum Error {
     UseVars(String, PathBuf),
     #[error("failed to setup worker `{0}`")]
     WorkerSetupFailed(String),
+    #[error("argument `{0}` has wrong type")]
+    WrongArgumentType(String),
     #[error("variable `{0}` must be of type `{1}`")]
     WrongVarType(String, String),
 }

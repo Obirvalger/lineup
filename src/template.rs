@@ -6,7 +6,7 @@ pub use tera::Context;
 use anyhow::Context as AnyhowContext;
 use anyhow::{bail, Result};
 use cmd_lib::run_fun;
-use inquire::Confirm;
+use inquire::{Confirm, Text};
 use lazy_static::lazy_static;
 use serde_json::value::{to_value, Value};
 use serde_json::{to_string, to_string_pretty};
@@ -201,6 +201,19 @@ fn fs_function(args: &HashMap<String, Value>) -> Result<Value> {
     }
 }
 
+fn input(args: &HashMap<String, Value>) -> Result<Value> {
+    let text = if let Some(msg) = args.get("msg") {
+        match msg {
+            Value::String(msg) => Text::new(msg).prompt()?,
+            _ => bail!(Error::WrongArgumentType("msg".to_string())),
+        }
+    } else {
+        bail!(Error::NoArgument("msg".to_string()))
+    };
+
+    Ok(Value::String(text))
+}
+
 fn host_cmd(args: &HashMap<String, Value>) -> tera::Result<Value> {
     let cmd = match args.get("cmd") {
         Some(val) => val,
@@ -313,6 +326,7 @@ pub fn render<S: ToString, P: AsRef<str>>(
 
             tera.register_function("confirm", confirm);
             tera.register_function("fs", wrap_function(Box::new(fs_function)));
+            tera.register_function("input", wrap_function(Box::new(input)));
             tera.register_function("host_cmd", host_cmd);
             tera.register_function("tmpdir", tmpdir);
             tera

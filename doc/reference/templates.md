@@ -45,6 +45,7 @@ There are lineup `functions` besides `tera` built-ins:
 * [confirm](#confirm) - Asks user a question and returns response as
     boolean value;
 * [fs](#fs-function) - Read `fs` variable;
+* [input](#input) - Prompt user for input;
 * [host_cmd](#hostCmd) - Returns output from running on host command;
 * `tmpdir` - Returns path to tmpdir.
 
@@ -61,6 +62,13 @@ Read value stored in `fs` variable via kind. For example, save to variable
 `var` value from `fs` varaiable `fs_var`:
 ```toml
 var = "{{ fs(name='fs_var') }}"
+```
+
+## Input
+Input function is used to get text from a user. It has a `msg` argument with
+a message showed to the user. Example of getting task number or nothing:
+```toml
+vars.task = "{{ input(msg='Enter task number or just press <Enter>:') }}"
 ```
 
 ## HostCmd
