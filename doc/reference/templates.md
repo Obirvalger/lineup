@@ -12,6 +12,7 @@ There are lineup `filters` besides `tera` built-ins:
 * [fs](#fs-filter) - Read `fs` variable;
 * `is_empty` - Return true if array, object or string is empty;
 * `json`, `j` - Encode value to json (alias to `json_encode`);
+* `lines` - Split string value by newlines;
 * [quote](#quote), `q` - Shell escapes value.
 
 ## Cond

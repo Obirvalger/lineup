@@ -116,6 +116,16 @@ pub fn json_encode(value: &Value, args: &HashMap<String, Value>) -> tera::Result
     }
 }
 
+fn lines(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
+    match value {
+        Value::String(text) => {
+            let lines = text.lines().map(|l| Value::String(l.to_string()));
+            Ok(Value::Array(lines.collect::<Vec<_>>()))
+        }
+        _ => bail!(Error::WrongValueType),
+    }
+}
+
 fn quote_string(value: &Value) -> tera::Result<String> {
     let error_not_support = "Value of not supported type";
     let s = match value {
@@ -321,6 +331,7 @@ pub fn render<S: ToString, P: AsRef<str>>(
             tera.register_filter("is_empty", is_empty);
             tera.register_filter("j", json_encode);
             tera.register_filter("json", json_encode);
+            tera.register_filter("lines", wrap_filter(Box::new(lines)));
             tera.register_filter("q", quote);
             tera.register_filter("quote", quote);
 
