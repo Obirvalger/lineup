@@ -6,7 +6,7 @@ use thiserror::Error as ThisError;
 pub enum Error {
     #[error("extra var `{0}` does not have '=' to delimit name")]
     BadExtraVar(String),
-    #[error("Fs var name should be alphanumeric, but get `{0}`")]
+    #[error("fs var name should be alphanumeric, but get `{0}`")]
     BadFsVar(String),
     #[error("kind argument `{0}` does not have ':' to delimit name")]
     BadKindArg(String),
@@ -36,7 +36,7 @@ pub enum Error {
     NoArgument(String),
     #[error("no engine provided to worker `{0}`")]
     NoEngine(String),
-    #[error("Fs variable `{0}` does not exist")]
+    #[error("fs variable `{0}` does not exist")]
     NoFsVar(String),
     #[error("workers should be set")]
     NoWorkers,
