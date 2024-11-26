@@ -137,8 +137,17 @@ fn quote_string(value: &Value) -> tera::Result<String> {
     Ok(run_fun!(printf %q $s)?)
 }
 
-fn quote(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
-    let error_not_support = "Value of not supported type";
+fn quote(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
+    let sep = if let Some(sep) = args.get("sep") {
+        match sep {
+            Value::String(s) => s.to_string(),
+            Value::Number(n) => n.to_string(),
+            _ => bail!(Error::WrongArgumentType("sep".to_string())),
+        }
+    } else {
+        " ".to_string()
+    };
+
     match value {
         Value::Bool(_) | Value::Number(_) | Value::String(_) => {
             Ok(Value::String(quote_string(value)?))
@@ -150,14 +159,13 @@ fn quote(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
                     Value::Bool(_) | Value::Number(_) | Value::String(_) => {
                         result.push(quote_string(value)?);
                     }
-                    _ => return Err(error_not_support.into()),
+                    _ => bail!(Error::WrongValueType),
                 }
             }
 
-            let sep = args.get("sep").and_then(|s| s.as_str()).unwrap_or(" ");
-            Ok(Value::String(result.join(sep)))
+            Ok(Value::String(result.join(&sep)))
         }
-        _ => Err(error_not_support.into()),
+        _ => bail!(Error::WrongValueType),
     }
 }
 
@@ -332,8 +340,8 @@ pub fn render<S: ToString, P: AsRef<str>>(
             tera.register_filter("j", json_encode);
             tera.register_filter("json", json_encode);
             tera.register_filter("lines", wrap_filter(Box::new(lines)));
-            tera.register_filter("q", quote);
-            tera.register_filter("quote", quote);
+            tera.register_filter("q", wrap_filter(Box::new(quote)));
+            tera.register_filter("quote", wrap_filter(Box::new(quote)));
 
             tera.register_function("confirm", confirm);
             tera.register_function("fs", wrap_function(Box::new(fs_function)));
@@ -535,6 +543,26 @@ mod tests {
             ("sep".to_string(), to_value(",")?),
         ]);
         assert_eq!(quote(&to_value(["docker", "vmusers"])?, &map)?, to_value("docker,vmusers")?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_quote_array_sep_number() -> Result<()> {
+        let map = HashMap::from([
+            ("sep".to_string(), to_value(0)?),
+        ]);
+        assert_eq!(quote(&to_value(["one", "two"])?, &map)?, to_value("one0two")?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_quote_array_sep_non_string_or_number() -> Result<()> {
+        let map = HashMap::from([
+            ("sep".to_string(), to_value(true)?),
+        ]);
+        assert!(quote(&to_value(["one", "two"])?, &map).is_err());
 
         Ok(())
     }
