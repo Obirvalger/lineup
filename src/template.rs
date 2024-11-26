@@ -348,3 +348,194 @@ pub fn render<S: ToString, P: AsRef<str>>(
         .render_str(&template.to_string(), context)
         .with_context(|| format!("Failed to render template in {}", place.as_ref()))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::collections::HashMap;
+
+    use serde_json::value::to_value;
+
+    #[test]
+    fn filter_basename() -> Result<()> {
+        assert_eq!(
+            basename(&to_value("/usr/share")?, &HashMap::new())?,
+            to_value("share")?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_cond_true_if() -> Result<()> {
+        let map = HashMap::from([
+            ("if".to_string(), to_value("--now")?),
+        ]);
+        assert_eq!(
+            cond(&to_value(true)?, &map)?,
+            to_value("--now")?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_cond_false_else() -> Result<()> {
+        let map = HashMap::from([
+            ("else".to_string(), to_value("--never")?),
+        ]);
+        assert_eq!(
+            cond(&to_value(false)?, &map)?,
+            to_value("--never")?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_cond_true_if_else() -> Result<()> {
+        let map = HashMap::from([
+            ("if".to_string(), to_value("--now")?),
+            ("else".to_string(), to_value("--never")?),
+        ]);
+        assert_eq!(
+            cond(&to_value(true)?, &map)?,
+            to_value("--now")?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_cond_false_if_else() -> Result<()> {
+        let map = HashMap::from([
+            ("if".to_string(), to_value("--now")?),
+            ("else".to_string(), to_value("--never")?),
+        ]);
+        assert_eq!(
+            cond(&to_value(false)?, &map)?,
+            to_value("--never")?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_cond_false_if() -> Result<()> {
+        let map = HashMap::from([
+            ("if".to_string(), to_value("--now")?),
+        ]);
+        assert_eq!(
+            cond(&to_value(false)?, &map)?,
+            to_value("")?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_cond_true_else() -> Result<()> {
+        let map = HashMap::from([
+            ("else".to_string(), to_value("--never")?),
+        ]);
+        assert_eq!(
+            cond(&to_value(true)?, &map)?,
+            to_value("")?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_cond_true() -> Result<()> {
+        let map = HashMap::new();
+        assert_eq!(
+            cond(&to_value(true)?, &map)?,
+            to_value("")?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_cond_false() -> Result<()> {
+        let map = HashMap::new();
+        assert_eq!(
+            cond(&to_value(false)?, &map)?,
+            to_value("")?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_cond_not_bool() -> Result<()> {
+        let map = HashMap::new();
+        assert!(cond(&to_value(1)?, &map).is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_dirname() -> Result<()> {
+        assert_eq!(
+            dirname(&to_value("/usr/share")?, &HashMap::new())?,
+            to_value("/usr")?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_quote_number() -> Result<()> {
+        let map = HashMap::new();
+        assert_eq!(quote(&to_value(8)?, &map)?, to_value("8")?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_quote_str() -> Result<()> {
+        let map = HashMap::new();
+        assert_eq!(quote(&to_value("str")?, &map)?, to_value("str")?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_quote_in_quotation_marks() -> Result<()> {
+        let map = HashMap::new();
+        for s in ["$HOME", "one two", r#"q"q"#, "`date`", "echo 1 | cat"] {
+            assert_eq!(quote(&to_value(&s)?, &map)?, to_value(format!("'{}'", s))?);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_quote_single_quote() -> Result<()> {
+        let map = HashMap::new();
+        assert_eq!(quote(&to_value("can't")?, &map)?, to_value(r#""can't""#)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_quote_array() -> Result<()> {
+        let map = HashMap::new();
+        assert_eq!(quote(&to_value(["echo", "$?"])?, &map)?, to_value("echo '$?'")?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_quote_array_sep() -> Result<()> {
+        let map = HashMap::from([
+            ("sep".to_string(), to_value(",")?),
+        ]);
+        assert_eq!(quote(&to_value(["docker", "vmusers"])?, &map)?, to_value("docker,vmusers")?);
+
+        Ok(())
+    }
+}
