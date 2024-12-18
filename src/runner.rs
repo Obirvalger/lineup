@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Context as AnyhowContext;
 use anyhow::{bail, Result};
+use log::warn;
 use rayon::prelude::*;
 use regex::RegexSet;
 use serde_json::Value;
@@ -240,7 +241,11 @@ impl Runner {
                     {
                         let mut context = context.to_owned();
                         context.insert("worker", &worker.name);
-                        task.run(&Some(name), &context, &self.dir, &self.tasklines, worker)?;
+                        let result =
+                            task.run(&Some(name), &context, &self.dir, &self.tasklines, worker)?;
+                        if let Some(exception) = result.as_exception() {
+                            warn!("Got exception: {:?}", exception);
+                        }
                     };
 
                     Ok(())

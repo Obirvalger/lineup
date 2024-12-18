@@ -12,6 +12,7 @@ use crate::items::Items;
 use crate::manifest::Tasklines;
 use crate::render::Render;
 use crate::table::Table;
+use crate::task_result::TaskResult;
 use crate::task_type::{CmdParams, TaskType};
 use crate::template::Context;
 use crate::vars::ExtVars;
@@ -63,7 +64,7 @@ impl Task {
         dir: &Path,
         tasklines: &Tasklines,
         worker: &Worker,
-    ) -> Result<Value> {
+    ) -> Result<TaskResult> {
         let context = if self.clean_vars { Context::default() } else { context.to_owned() };
 
         let items = self
@@ -79,8 +80,8 @@ impl Task {
             .unwrap_or_else(|| "item".to_string());
 
         let name = name.as_ref().map(|n| n.as_ref().to_string());
-        let values = CondIterator::new(items, self.parallel)
-            .map(|item| -> Result<(Value, String)> {
+        let results = CondIterator::new(items, self.parallel)
+            .map(|item| -> Result<(String, TaskResult)> {
                 let table = self
                     .table
                     .as_ref()
@@ -101,8 +102,8 @@ impl Task {
                     }
                 }
 
-                let values = CondIterator::new(table, self.parallel)
-                    .map(|row| -> Result<Value> {
+                let results = CondIterator::new(table, self.parallel)
+                    .map(|row| -> Result<TaskResult> {
                         let mut context = context.to_owned();
                         context.insert("row", &row);
                         let task_vars = self.vars.render(&context, "task")?;
@@ -110,7 +111,8 @@ impl Task {
                         if let Some(condition) = &self.condition {
                             let condition = condition.render(&context, "task condition")?;
                             if worker.shell(condition, &CmdParams::default()).is_err() {
-                                return Ok(Value::Null);
+                                let result = context.get("result").unwrap_or(&Value::Null);
+                                return Ok(result.to_owned().into());
                             }
                         }
                         if let Some(name) = &name {
@@ -136,28 +138,29 @@ impl Task {
                     })
                     .collect::<Result<Vec<_>, _>>()?;
 
-                let value =
-                    if self.table.is_some() { Value::Array(values) } else { values[0].to_owned() };
+                let result = if self.table.is_some() {
+                    TaskResult::fold_vec(&results)
+                } else {
+                    results[0].to_owned()
+                };
 
-                Ok((value, item))
+                Ok((item, result))
             })
             .collect::<Result<Vec<_>>>()?;
-        let value = if self.items_table.is_some() {
-            let mut map = serde_json::Map::new();
-            for value in values {
-                map.insert(value.1, value.0);
-            }
-            Value::Object(map)
+        let result = if self.items_table.is_some() {
+            TaskResult::fold_pairs(&results)
         } else {
-            values[0].0.to_owned()
+            results[0].1.to_owned()
         };
 
         if let Some(fs_var_name) = &self.result_fs_var {
-            let fs_var_name = fs_var_name.render(&context, "task result-fs-var")?;
-            let fs_var = FsVar::new(fs_var_name)?;
-            fs_var.write(&value)?;
+            if let Some(value) = result.as_value() {
+                let fs_var_name = fs_var_name.render(&context, "task result-fs-var")?;
+                let fs_var = FsVar::new(fs_var_name)?;
+                fs_var.write(value)?;
+            }
         }
 
-        Ok(value)
+        Ok(result)
     }
 }
