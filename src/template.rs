@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+pub use regex::Regex;
 pub use tera::Context;
 
 use anyhow::Context as AnyhowContext;
@@ -164,6 +165,133 @@ fn quote(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
             }
 
             Ok(Value::String(result.join(&sep)))
+        }
+        _ => bail!(Error::WrongValueType),
+    }
+}
+
+fn re_match(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
+    let reg_str = if let Some(re) = args.get("re") {
+        match re {
+            Value::String(re) => re.to_string(),
+            Value::Number(re) => re.to_string(),
+            _ => bail!(Error::WrongArgumentType("re".to_string())),
+        }
+    } else {
+        bail!(Error::NoArgument("re".to_string()))
+    };
+
+    let fix = if let Some(fix) = args.get("fix") {
+        match fix {
+            Value::Bool(b) => *b,
+            _ => bail!(Error::WrongArgumentType("fix".to_string())),
+        }
+    } else {
+        false
+    };
+
+    let reg_str = if fix { regex::escape(&reg_str) } else { reg_str };
+    let re = Regex::new(&reg_str)?;
+
+    match value {
+        Value::String(s) => Ok(Value::Bool(re.is_match(s))),
+        Value::Number(n) => Ok(Value::Bool(re.is_match(&n.to_string()))),
+        Value::Array(a) => {
+            let mut array = Vec::with_capacity(a.capacity());
+            for value in a {
+                let value_str = match value {
+                    Value::String(s) => s.to_string(),
+                    Value::Number(n) => n.to_string(),
+                    _ => bail!(Error::WrongValueType),
+                };
+
+                if re.is_match(&value_str) {
+                    array.push(value.to_owned())
+                }
+            }
+            Ok(Value::Array(array))
+        }
+        _ => bail!(Error::WrongValueType),
+    }
+}
+
+fn re_sub(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
+    let reg_str = if let Some(re) = args.get("re") {
+        match re {
+            Value::String(re) => re.to_string(),
+            Value::Number(re) => re.to_string(),
+            _ => bail!(Error::WrongArgumentType("re".to_string())),
+        }
+    } else {
+        bail!(Error::NoArgument("re".to_string()))
+    };
+
+    let rep_str = if let Some(rep) = args.get("str") {
+        match rep {
+            Value::String(rep) => rep,
+            _ => bail!(Error::WrongArgumentType("str".to_string())),
+        }
+    } else {
+        bail!(Error::NoArgument("str".to_string()))
+    };
+
+    let n = if let Some(rep) = args.get("n") {
+        match rep {
+            Value::Number(n) => {
+                n.as_u64().ok_or(Error::WrongArgumentType("n".to_string()))? as usize
+            }
+            _ => bail!(Error::WrongArgumentType("n".to_string())),
+        }
+    } else {
+        0
+    };
+
+    let fix = if let Some(fix) = args.get("fix") {
+        match fix {
+            Value::Bool(b) => *b,
+            _ => bail!(Error::WrongArgumentType("fix".to_string())),
+        }
+    } else {
+        false
+    };
+
+    let matches_only = if let Some(matches_only) = args.get("matches_only") {
+        match matches_only {
+            Value::Bool(b) => *b,
+            _ => bail!(Error::WrongArgumentType("matches_only".to_string())),
+        }
+    } else {
+        false
+    };
+
+    let reg_str = if fix { regex::escape(&reg_str) } else { reg_str };
+    let re = Regex::new(&reg_str)?;
+
+    match value {
+        Value::String(s) => {
+            let result = re.replacen(s, n, rep_str);
+            Ok(Value::String(result.to_string()))
+        }
+        Value::Number(num) => {
+            let s = num.to_string();
+            let result = re.replacen(&s, n, rep_str);
+            Ok(Value::String(result.to_string()))
+        }
+        Value::Array(a) => {
+            let mut array = Vec::with_capacity(a.capacity());
+            for value in a {
+                let value_str = match value {
+                    Value::String(s) => s.to_string(),
+                    Value::Number(n) => n.to_string(),
+                    _ => bail!(Error::WrongValueType),
+                };
+
+                let s = re.replacen(&value_str, n, rep_str).to_string();
+                if !matches_only || re.is_match(&value_str) {
+                    array.push(Value::String(s))
+                }
+            }
+            Ok(Value::Array(array))
         }
         _ => bail!(Error::WrongValueType),
     }
@@ -342,6 +470,8 @@ pub fn render<S: ToString, P: AsRef<str>>(
             tera.register_filter("lines", wrap_filter(Box::new(lines)));
             tera.register_filter("q", wrap_filter(Box::new(quote)));
             tera.register_filter("quote", wrap_filter(Box::new(quote)));
+            tera.register_filter("re_match", wrap_filter(Box::new(re_match)));
+            tera.register_filter("re_sub", wrap_filter(Box::new(re_sub)));
 
             tera.register_function("confirm", confirm);
             tera.register_function("fs", wrap_function(Box::new(fs_function)));
@@ -519,6 +649,161 @@ mod tests {
     fn filter_quote_array_sep_non_string_or_number() -> Result<()> {
         let map = HashMap::from([("sep".to_string(), to_value(true)?)]);
         assert!(quote(&to_value(["one", "two"])?, &map).is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_match_match() -> Result<()> {
+        let map = HashMap::from([("re".to_string(), to_value("1.2.3")?)]);
+        assert_eq!(re_match(&to_value("version: 1.2-3")?, &map)?, to_value(true)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_match_not_match() -> Result<()> {
+        let map = HashMap::from([("re".to_string(), to_value("1.23")?)]);
+        assert_eq!(re_match(&to_value("version: 1.2-3")?, &map)?, to_value(false)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_match_match_number() -> Result<()> {
+        let map = HashMap::from([("re".to_string(), to_value(r"\d")?)]);
+        assert_eq!(re_match(&to_value(1)?, &map)?, to_value(true)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_match_fail_no_re() -> Result<()> {
+        let map = HashMap::new();
+        assert!(re_match(&to_value(1)?, &map).is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_match_fixed_string() -> Result<()> {
+        let map = HashMap::from([
+            ("re".to_string(), to_value("+")?),
+            ("fix".to_string(), to_value(true)?),
+        ]);
+        assert_eq!(re_match(&to_value("+")?, &map)?, to_value(true)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_match_match_array() -> Result<()> {
+        let map = HashMap::from([("re".to_string(), to_value("1.2.3")?)]);
+        assert_eq!(
+            re_match(&to_value(["version: 1.2-3", "12"])?, &map)?,
+            to_value(["version: 1.2-3"])?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_match_not_match_array() -> Result<()> {
+        let map = HashMap::from([("re".to_string(), to_value("1.23")?)]);
+        assert_eq!(
+            re_match(&to_value(["version: 1.2-3", "12"])?, &map)?,
+            to_value::<[String; 0]>([])?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_match_fail_wrong_value_type() -> Result<()> {
+        let map = HashMap::from([("re".to_string(), to_value("1.23")?)]);
+        assert!(re_match(&to_value(true)?, &map).is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_match_fail_wrong_re_type() -> Result<()> {
+        let map = HashMap::from([("re".to_string(), to_value(false)?)]);
+        assert!(re_match(&to_value("string")?, &map).is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_match_fail_wrong_fix_type() -> Result<()> {
+        let map = HashMap::from([
+            ("re".to_string(), to_value(".")?),
+            ("fix".to_string(), to_value(12)?),
+        ]);
+        assert!(re_match(&to_value("12")?, &map).is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_sub_matches_only() -> Result<()> {
+        let map = HashMap::from([
+            ("re".to_string(), to_value("1.2.3")?),
+            ("str".to_string(), to_value("VER")?),
+            ("matches_only".to_string(), to_value(true)?),
+        ]);
+        assert_eq!(
+            re_sub(&to_value(["version: 1.2-3", "12"])?, &map)?,
+            to_value(["version: VER"])?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_sub_all() -> Result<()> {
+        let map = HashMap::from([
+            ("re".to_string(), to_value("1.2.3")?),
+            ("str".to_string(), to_value("VER")?),
+        ]);
+        assert_eq!(
+            re_sub(&to_value(["version: 1.2-3", "12"])?, &map)?,
+            to_value(["version: VER", "12"])?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_sub_one_str() -> Result<()> {
+        let map = HashMap::from([
+            ("re".to_string(), to_value("1.2.3")?),
+            ("str".to_string(), to_value("VER")?),
+        ]);
+        assert_eq!(re_sub(&to_value("version: 1.2-3")?, &map)?, to_value("version: VER")?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_sub_one_number() -> Result<()> {
+        let map = HashMap::from([
+            ("re".to_string(), to_value(1)?),
+            ("str".to_string(), to_value("ONE")?),
+        ]);
+        assert_eq!(re_sub(&to_value(1)?, &map)?, to_value("ONE")?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn filter_re_sub_fixed_string() -> Result<()> {
+        let map = HashMap::from([
+            ("re".to_string(), to_value("+")?),
+            ("str".to_string(), to_value("plus")?),
+            ("fix".to_string(), to_value(true)?),
+        ]);
+        assert_eq!(re_sub(&to_value("+")?, &map)?, to_value("plus")?);
 
         Ok(())
     }
