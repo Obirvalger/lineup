@@ -166,6 +166,7 @@ If `result` variable is not set it has `null` value.
 
 ## Task types
 There are several types of tasks:
+* [break](#Break-task) - Break execution of a taskline;
 * [dummy](#Dummy-task) - Do nothing;
 * [ensure](#Ensure-task) - Ensure taskline could be run;
 * [exec](#Exec-task) - Run a command from an args array;
@@ -176,6 +177,22 @@ There are several types of tasks:
 * [shell](#Shell-task) - Run a command from a shell string;
 * [special](#Special-task) - Specific tasks supported by some engines;
 * [test](#Test-task) - An array of commands.
+
+## Break task
+Stops execution of a taskline with name given in `taskline` parameter. By
+default it breaks the most inner taskline. Returns a previous result by
+default, otherwise result could be set via a `result` parameter.
+
+**Return:** `result`.
+
+Example of breaking taskline `break` before running failing command:
+```toml
+[[tasklines.break]]
+break = {}
+
+[[tasklines.break]]
+shell.cmd = "false"
+```
 
 ## Dummy task
 The only one parameter `result` specifies return value. By default it is

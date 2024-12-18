@@ -9,16 +9,27 @@ use serde_json::Value;
 use crate::cmd::CmdOut;
 use crate::config::CONFIG;
 use crate::error::Error;
+use crate::exception::Exception;
 use crate::manifest::Tasklines;
 use crate::matches::Matches;
 use crate::module;
 use crate::render::Render;
 use crate::runner::Runner;
+use crate::task_result::TaskResult;
 use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::tmpdir::tmpfile;
 use crate::vars::Var;
 use crate::worker::Worker;
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct BreakType {
+    #[serde(default)]
+    pub taskline: Option<String>,
+    #[serde(default)]
+    pub result: Option<Value>,
+}
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -381,6 +392,7 @@ pub struct TestType {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TaskType {
+    Break(BreakType),
     Dummy(DummyType),
     Ensure(EnsureType),
     Exec(ExecType),
@@ -400,18 +412,30 @@ impl TaskType {
         dir: &Path,
         tasklines: &Tasklines,
         worker: &Worker,
-    ) -> Result<Value> {
+    ) -> Result<TaskResult> {
         let mut context = context.to_owned();
         match self {
+            Self::Break(BreakType { taskline, result }) => {
+                let result = if let Some(result) = result {
+                    result.render(&context, "break result")?
+                } else {
+                    context.get("result").cloned().unwrap_or(Value::Null)
+                };
+                Ok(Exception::BreakTaskline {
+                    taskline: taskline.render(&context, "break taskline")?,
+                    result,
+                }
+                .into())
+            }
             Self::Dummy(dummy) => {
                 if let Some(result) = &dummy.result {
-                    result.render(&context, "dummy result")
+                    result.render(&context, "dummy result").map(|ok| ok.into())
                 } else {
-                    Ok(context.get("result").cloned().unwrap_or(Value::Null))
+                    Ok(context.get("result").cloned().unwrap_or(Value::Null).into())
                 }
             }
-            Self::Ensure(ensure) => ensure.ensure(&context),
-            Self::Exec(exec) => exec.run(&context, worker),
+            Self::Ensure(ensure) => ensure.ensure(&context).map(|ok| ok.into()),
+            Self::Exec(exec) => exec.run(&context, worker).map(|ok| ok.into()),
             Self::File(FileType { dst, source }) => {
                 let dst = dst.render(&context, "file task dst")?;
                 match source {
@@ -425,7 +449,7 @@ impl TaskType {
                     }
                 }?;
 
-                Ok(Value::String(dst.to_string_lossy().to_string()))
+                Ok(Value::String(dst.to_string_lossy().to_string()).into())
             }
             Self::Get(GetType { src, dst }) => {
                 let src = src.render(&context, "get task src")?;
@@ -438,7 +462,7 @@ impl TaskType {
                 };
                 worker.get(src, &dst)?;
 
-                Ok(Value::String(dst.to_string_lossy().to_string()))
+                Ok(Value::String(dst.to_string_lossy().to_string()).into())
             }
             Self::Run(taskline) => Self::RunTaskline(RunTasklineType {
                 taskline: taskline.to_owned(),
@@ -492,16 +516,32 @@ impl TaskType {
 
                 let mut value = Value::Null;
                 for task in taskline.as_line().expect("get not line variant of taskline") {
-                    value = task.task.run(&task.name, &context, &dir, &new_tasklines, worker)?;
-                    context.insert("result", &value);
+                    let result =
+                        task.task.run(&task.name, &context, &dir, &new_tasklines, worker)?;
+
+                    if let Some(v) = result.as_value() {
+                        value = v.to_owned();
+                        context.insert("result", &value);
+                    } else if let Some(exception) = result.as_exception() {
+                        match exception {
+                            Exception::BreakTaskline { taskline, result } => {
+                                let break_taskline = taskline.as_ref().unwrap_or(&taskline_str);
+                                if break_taskline == &taskline_str {
+                                    return Ok(result.to_owned().into());
+                                } else {
+                                    return Ok(exception.to_owned().into());
+                                }
+                            }
+                        }
+                    }
                 }
 
-                Ok(value)
+                Ok(value.into())
             }
-            Self::Shell(shell) => shell.run(&context, worker),
+            Self::Shell(shell) => shell.run(&context, worker).map(|ok| ok.into()),
             Self::Special(SpecialType { type_, ignore_unsupported }) => {
                 worker.special(type_, *ignore_unsupported)?;
-                Ok(Value::Null)
+                Ok(Value::Null.into())
             }
             Self::Test(TestType { commands, check }) => {
                 let mut success = true;
@@ -510,7 +550,7 @@ impl TaskType {
                     success &= command.run(&context, worker, *check)?.success();
                 }
 
-                Ok(Value::Bool(success))
+                Ok(Value::Bool(success).into())
             }
         }
     }
