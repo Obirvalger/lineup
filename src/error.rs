@@ -38,6 +38,8 @@ pub enum Error {
     NoEngine(String),
     #[error("fs variable `{0}` does not exist")]
     NoFsVar(String),
+    #[error("items variable `{0}` does not set")]
+    NoItemsVar(String),
     #[error("workers should be set")]
     NoWorkers,
     #[error("failed tsort in {0}")]
@@ -56,6 +58,8 @@ pub enum Error {
     WorkerSetupFailed(String),
     #[error("argument `{0}` has wrong type")]
     WrongArgumentType(String),
+    #[error("items variable `{0}` has wrong type")]
+    WrongItemsVarType(String),
     #[error("value has wrong type")]
     WrongValueType,
     #[error("variable `{0}` must be of type `{1}`")]

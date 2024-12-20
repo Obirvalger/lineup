@@ -511,7 +511,7 @@ mem = "2G"
 # Items
 Items are used to multiply [workers](#Worker-items) or [tasks](#Task-items).
 It sets a [template](templates.md) variable `item`, which can be used in
-strings as `{{ item }}`. Items could be one of three forms:
+strings as `{{ item }}`. Items could be one of four forms:
 1. Array of strings or integers
 ```toml
 items = ["a", 2]
@@ -520,7 +520,11 @@ items = ["a", 2]
 ```toml
 items = { start = 1, end = 6, step = 2 }
 ```
-3. Shell command, run on host, which stdout splitted by newlines
+3. Elements of an array variable or keys of an object variable with given name
+```toml
+items.var = "commands"
+```
+4. Shell command, run on host, which stdout splitted by newlines
 ```toml
 items = { command = "ls -d /lib*" }
 ```
