@@ -177,6 +177,54 @@ impl Render for EngineDocker {
     }
 }
 
+fn default_engine_incus_net_device() -> String {
+    "eth0".to_string()
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
+pub struct EngineIncusNet {
+    pub address: Option<String>,
+    #[serde(default = "default_engine_incus_net_device")]
+    pub device: String,
+    pub network: Option<String>,
+}
+
+impl Render for EngineIncusNet {
+    fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
+        let address = self.address.render(context, format!("address in {}", place.as_ref()))?;
+        let device = self.device.render(context, format!("device in {}", place.as_ref()))?;
+        let network = self.network.render(context, format!("network in {}", place.as_ref()))?;
+        Ok(Self { address, device, network })
+    }
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
+pub struct EngineIncus {
+    #[serde(alias = "mem")]
+    pub memory: Option<String>,
+    pub net: Option<EngineIncusNet>,
+    pub nproc: Option<StringOrInt>,
+    pub image: String,
+    #[serde(default)]
+    pub exists: ExistsAction,
+    #[serde(flatten)]
+    #[serde(default)]
+    pub base: EngineBase,
+}
+
+impl Render for EngineIncus {
+    fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
+        let place = format!("docker engine in {}", place.as_ref());
+        let memory = self.memory.render(context, format!("memory in {}", place))?;
+        let image = self.image.render(context, format!("image in {}", place))?;
+        let base = self.base.render(context, format!("base in {}", place))?;
+        Ok(Self { memory, image, base, ..self.to_owned() })
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 #[serde(deny_unknown_fields)]
@@ -213,6 +261,7 @@ pub enum Engine {
     Vml(EngineVml),
     Ssh(EngineSsh),
     Docker(EngineDocker),
+    Incus(EngineIncus),
     Podman(EnginePodman),
     Host,
     // Store any keys to ignore them

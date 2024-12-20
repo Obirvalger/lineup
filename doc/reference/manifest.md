@@ -397,6 +397,7 @@ Most engines have base fields:
 There are several types of engines:
 * [dbg](#Dbg-engine);
 * [docker](#Docker-engine);
+* [incus](#Incus-engine);
 * [host](#Host-engine);
 * [podman](#Podman-engine).
 * [ssh](#Ssh-engine);
@@ -429,6 +430,19 @@ Example of a docker worker with name `docker` and `alt` image:
 [workers.docker]
 [workers.docker.engine.docker]
 image = "alt"
+```
+
+
+## Incus engine
+Container engine using incus.
+Incus specific options are:
+* `memory` - Amount of memory;
+* `image` - Image.
+
+Example of a docker worker with name `docker` and `alt` image:
+```toml
+[workers.incus.engine.incus]
+image = "alt/Sisyphus"
 ```
 
 

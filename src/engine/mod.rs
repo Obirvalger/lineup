@@ -12,6 +12,7 @@ use crate::config::CONFIG;
 use crate::engine::dbg::EngineDbg;
 use crate::engine::docker::EngineDocker;
 use crate::engine::host::EngineHost;
+use crate::engine::incus::EngineIncus;
 use crate::engine::podman::EnginePodman;
 use crate::engine::ssh::EngineSsh;
 use crate::engine::vml::EngineVml;
@@ -24,6 +25,7 @@ mod base;
 mod dbg;
 mod docker;
 mod host;
+mod incus;
 mod podman;
 mod ssh;
 mod vml;
@@ -32,6 +34,7 @@ mod vml;
 pub enum Engine {
     Dbg(EngineDbg),
     Docker(EngineDocker),
+    Incus(EngineIncus),
     Host(EngineHost),
     Podman(EnginePodman),
     Ssh(EngineSsh),
@@ -70,6 +73,9 @@ impl Engine {
             ManifestEngine::Docker(manifest_engine_docker) => Engine::Docker(
                 EngineDocker::from_manifest_engine(context, manifest_engine_docker, dir)?,
             ),
+            ManifestEngine::Incus(manifest_engine_incus) => {
+                Engine::Incus(EngineIncus::from_manifest_engine(context, manifest_engine_incus)?)
+            }
             ManifestEngine::Host => Engine::Host(EngineHost { base: EngineBase::default() }),
             ManifestEngine::Podman(manifest_engine_podman) => Engine::Podman(
                 EnginePodman::from_manifest_engine(context, manifest_engine_podman, dir)?,
@@ -89,6 +95,7 @@ impl Engine {
         match self {
             Engine::Dbg(engine) => &engine.base,
             Engine::Docker(engine) => &engine.base,
+            Engine::Incus(engine) => &engine.base,
             Engine::Host(engine) => &engine.base,
             Engine::Podman(engine) => &engine.base,
             Engine::Ssh(engine) => &engine.base,
@@ -103,6 +110,7 @@ impl Engine {
         match self {
             Engine::Dbg(_engine) => Ok(()),
             Engine::Docker(engine) => engine.start(name, action),
+            Engine::Incus(engine) => engine.start(name, action),
             Engine::Host(_engine) => Ok(()),
             Engine::Podman(engine) => engine.start(name, action),
             Engine::Ssh(_engine) => Ok(()),
@@ -118,6 +126,7 @@ impl Engine {
         match self {
             Engine::Dbg(_engine) => Ok(()),
             Engine::Docker(engine) => engine.remove(name),
+            Engine::Incus(engine) => engine.remove(name),
             Engine::Host(_engine) => Ok(()),
             Engine::Podman(engine) => engine.remove(name),
             Engine::Ssh(_engine) => Ok(()),
@@ -134,6 +143,7 @@ impl Engine {
         match self {
             Engine::Dbg(engine) => engine.copy(name, src, dst),
             Engine::Docker(engine) => engine.copy(name, src, dst),
+            Engine::Incus(engine) => engine.copy(name, src, dst),
             Engine::Host(engine) => engine.copy(name, src, dst),
             Engine::Podman(engine) => engine.copy(name, src, dst),
             Engine::Ssh(engine) => engine.copy(name, src, dst),
@@ -150,6 +160,7 @@ impl Engine {
         match self {
             Engine::Dbg(engine) => engine.get(name, src, dst),
             Engine::Docker(engine) => engine.get(name, src, dst),
+            Engine::Incus(engine) => engine.get(name, src, dst),
             Engine::Host(engine) => engine.get(name, src, dst),
             Engine::Podman(engine) => engine.get(name, src, dst),
             Engine::Ssh(engine) => engine.get(name, src, dst),
@@ -161,6 +172,7 @@ impl Engine {
         match self {
             Engine::Dbg(engine) => engine.shell_cmd(name, command),
             Engine::Docker(engine) => engine.shell_cmd(name, command),
+            Engine::Incus(engine) => engine.shell_cmd(name, command),
             Engine::Host(engine) => engine.shell_cmd(name, command),
             Engine::Podman(engine) => engine.shell_cmd(name, command),
             Engine::Ssh(engine) => engine.shell_cmd(name, command),
@@ -227,6 +239,7 @@ impl Engine {
         let cmd = match self {
             Engine::Dbg(engine) => engine.exec_cmd(name, args),
             Engine::Docker(engine) => engine.shell_cmd(name, &command),
+            Engine::Incus(engine) => engine.exec_cmd(name, args),
             Engine::Host(engine) => engine.exec_cmd(name, args),
             Engine::Podman(engine) => engine.shell_cmd(name, &command),
             Engine::Ssh(engine) => engine.shell_cmd(name, &command),
@@ -260,6 +273,7 @@ impl Engine {
             SpecialTypeType::Restart => match self {
                 Engine::Dbg(dbg) => dbg.restart(name)?,
                 Engine::Docker(docker) => docker.restart(name)?,
+                Engine::Incus(incus) => incus.restart(name)?,
                 Engine::Podman(podman) => podman.restart(name)?,
                 Engine::Vml(vml) => vml.restart(name)?,
                 _ => {
