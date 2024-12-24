@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Result};
-use log::{log, warn, LevelFilter};
+use log::{info, log, warn, LevelFilter};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -88,6 +88,19 @@ impl EnsureType {
     }
 }
 
+fn default_error_code() -> i32 {
+    1
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+pub struct ErrorType {
+    msg: String,
+    #[serde(default = "default_error_code")]
+    code: i32,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum FileTypeSource {
@@ -115,6 +128,15 @@ pub struct GetType {
     #[serde(alias = "dest")]
     #[serde(alias = "destination")]
     pub dst: Option<PathBuf>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+pub struct InfoType {
+    msg: String,
+    #[serde(default)]
+    pub result: Option<Value>,
 }
 
 fn default_cmd_output_log() -> LevelFilter {
@@ -390,19 +412,31 @@ pub struct TestType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+pub struct WarnType {
+    msg: String,
+    #[serde(default)]
+    pub result: Option<Value>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TaskType {
     Break(BreakType),
     Dummy(DummyType),
     Ensure(EnsureType),
+    Error(ErrorType),
     Exec(ExecType),
     File(FileType),
     Get(GetType),
+    Info(InfoType),
     RunTaskline(RunTasklineType),
     Run(String),
     Shell(ShellType),
     Special(SpecialType),
     Test(TestType),
+    Warn(WarnType),
 }
 
 impl TaskType {
@@ -435,6 +469,10 @@ impl TaskType {
                 }
             }
             Self::Ensure(ensure) => ensure.ensure(&context).map(|ok| ok.into()),
+            Self::Error(ErrorType { msg, code }) => {
+                let msg = msg.render(&context, "error msg")?;
+                bail!(Error::User(msg, *code));
+            }
             Self::Exec(exec) => exec.run(&context, worker).map(|ok| ok.into()),
             Self::File(FileType { dst, source }) => {
                 let dst = dst.render(&context, "file task dst")?;
@@ -463,6 +501,15 @@ impl TaskType {
                 worker.get(src, &dst)?;
 
                 Ok(Value::String(dst.to_string_lossy().to_string()).into())
+            }
+            Self::Info(InfoType { msg, result }) => {
+                let msg = msg.render(&context, "info msg")?;
+                info!("{}", msg);
+                if let Some(result) = result {
+                    result.render(&context, "info result").map(|ok| ok.into())
+                } else {
+                    Ok(context.get("result").cloned().unwrap_or(Value::Null).into())
+                }
             }
             Self::Run(taskline) => Self::RunTaskline(RunTasklineType {
                 taskline: taskline.to_owned(),
@@ -551,6 +598,15 @@ impl TaskType {
                 }
 
                 Ok(Value::Bool(success).into())
+            }
+            Self::Warn(WarnType { msg, result }) => {
+                let msg = msg.render(&context, "warn msg")?;
+                warn!("{}", msg);
+                if let Some(result) = result {
+                    result.render(&context, "warn result").map(|ok| ok.into())
+                } else {
+                    Ok(context.get("result").cloned().unwrap_or(Value::Null).into())
+                }
             }
         }
     }

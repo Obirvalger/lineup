@@ -114,6 +114,12 @@ fn main() {
             .format_target(false)
             .format_timestamp(None)
             .try_init();
+        if let Some(Error::User(msg, code)) = &err.downcast_ref::<Error>() {
+            if !msg.is_empty() {
+                error!("{}", msg);
+            }
+            std::process::exit(*code);
+        }
         error!("{:#}", err);
         std::process::exit(1);
     });

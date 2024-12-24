@@ -169,14 +169,17 @@ There are several types of tasks:
 * [break](#Break-task) - Break execution of a taskline;
 * [dummy](#Dummy-task) - Do nothing;
 * [ensure](#Ensure-task) - Ensure taskline could be run;
+* [error](#Error-task) - Raise an error;
 * [exec](#Exec-task) - Run a command from an args array;
+* [info](#Info-task) - Show message with log info;
 * [file](#File-task) - Copy a file to the worker;
 * [get](#Get-task) - Copy a file from the worker;
 * [run-taskline](#RunTaskline-task) - Run a taskline from the file;
 * [run](#Run-task) - Run a taskline;
 * [shell](#Shell-task) - Run a command from a shell string;
 * [special](#Special-task) - Specific tasks supported by some engines;
-* [test](#Test-task) - An array of commands.
+* [test](#Test-task) - An array of commands;
+* [warn](#Warn-task) - Show message with log warn.
 
 ## Break task
 Stops execution of a taskline with name given in `taskline` parameter. By
@@ -214,6 +217,18 @@ It has field `vars` with an array of variable names. Check them to be set.
 Example of ensuring two variable `user` and `vars.lil` are set:
 ```toml
 ensure.vars = ["user", "vars.lil"]
+```
+
+## Error task
+Raises an error with message from a `msg` parameter. Exits process with a `1`
+code by default, otherwise return code could be set via a `code` parameter.
+
+**Return:** `result`.
+
+Example of failing with a message `Number not found` and an exit code `3`:
+```toml
+error.msg = "Number not found"
+error.code = 3
 ```
 
 ## Exec task
@@ -254,6 +269,17 @@ A get task has several fields:
 Example of getting `/etc/os-release` from the worker:
 ```toml
 get.src = "/etc/os-release"
+```
+
+## Info task
+It shows message from a `msg` parameter with a log info. Returns a previous
+result by default, otherwise result could be set via a `result` parameter.
+
+**Return:** `result`.
+
+Example of greeting worker:
+```toml
+info.msg = "Hello {{ worker }}!"
 ```
 
 ## Run task
@@ -335,6 +361,17 @@ test.commands = [
     { args = ["true"] }, # exec task
     { cmd = "true", check = true }, # check only this command
 ]
+```
+
+## Warn task
+It shows message from a `msg` parameter with a log warn. Returns a previous
+result by default, otherwise result could be set via a `result` parameter.
+
+**Return:** `result`.
+
+Example of greeting worker:
+```toml
+warn.msg = "Hello {{ worker }}!"
 ```
 
 ## Common command parameters

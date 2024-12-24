@@ -54,6 +54,8 @@ pub enum Error {
     UseTasklines(String, PathBuf),
     #[error("cannot use vars `{0}` from the `{1}`")]
     UseVars(String, PathBuf),
+    #[error("{0}")]
+    User(String, i32),
     #[error("failed to setup worker `{0}`")]
     WorkerSetupFailed(String),
     #[error("argument `{0}` has wrong type")]
