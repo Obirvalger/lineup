@@ -16,6 +16,7 @@ pub struct EngineIncus {
     pub net: Option<EngineIncusNet>,
     pub nproc: Option<String>,
     pub image: String,
+    pub user: Option<String>,
     pub exists: ExistsAction,
     pub base: EngineBase,
     incus_bin: String,
@@ -35,6 +36,7 @@ impl EngineIncus {
             net: manifest_engine_incus.net,
             nproc,
             image: manifest_engine_incus.image,
+            user: manifest_engine_incus.user,
             exists: manifest_engine_incus.exists,
             base: manifest_engine_incus.base,
             incus_bin,
@@ -140,10 +142,27 @@ impl EngineIncus {
         Ok(())
     }
 
+    fn user_flags<N: AsRef<str>>(&self, name: N, cmd: &mut Cmd) {
+        if let Some(user) = &self.user {
+            let name = self.n(name);
+            let err = "incus get id failed";
+            let incus = self.incus_bin.to_string();
+
+            let id = format!("echo $(id -g {0}):$(id -u {0})", user);
+            let uid_gid = run_fun!($incus exec $name --user 65534 -- sh -c $id).expect(err);
+            let (uid, gid) = uid_gid.split_once(':').expect(err);
+            cmd.arg("--user");
+            cmd.arg(uid);
+            cmd.arg("--group");
+            cmd.arg(gid);
+        }
+    }
+
     pub fn shell_cmd<N: AsRef<str>, S: AsRef<str>>(&self, name: N, command: S) -> Cmd {
         let mut cmd = Cmd::new(&self.incus_bin);
         cmd.arg("exec");
-        cmd.arg(self.n(name));
+        cmd.arg(self.n(name.as_ref()));
+        self.user_flags(name, &mut cmd);
         cmd.arg("--");
         cmd.args(["sh", "-c"]);
         cmd.arg(command.as_ref());
@@ -154,7 +173,8 @@ impl EngineIncus {
     pub fn exec_cmd<N: AsRef<str>, S: AsRef<str>>(&self, name: N, args: &[S]) -> Cmd {
         let mut cmd = Cmd::new(&self.incus_bin);
         cmd.arg("exec");
-        cmd.arg(self.n(name));
+        cmd.arg(self.n(name.as_ref()));
+        self.user_flags(name, &mut cmd);
         cmd.arg("--");
         cmd.args(args.iter().map(|a| a.as_ref()));
 

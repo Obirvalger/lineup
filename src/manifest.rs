@@ -208,6 +208,7 @@ pub struct EngineIncus {
     pub net: Option<EngineIncusNet>,
     pub nproc: Option<StringOrInt>,
     pub image: String,
+    pub user: Option<String>,
     #[serde(default)]
     pub exists: ExistsAction,
     #[serde(flatten)]

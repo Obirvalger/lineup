@@ -473,8 +473,11 @@ image = "alt"
 ## Incus engine
 Container engine using incus.
 Incus specific options are:
+* `image` - Image;
+* `net` - Describe network;
+* `nproc` - Number of processessors;
 * `memory` - Amount of memory;
-* `image` - Image.
+* `user` - User.
 
 Example of a docker worker with name `docker` and `alt` image:
 ```toml
@@ -532,7 +535,7 @@ Vml specific options are:
 * `memory` - Amount of memory;
 * `image` - Image;
 * `net` - Describe network;
-* `nproc` - Number of processes;
+* `nproc` - Number of processessors;
 * `parent` - Create vm with specific parent;
 * `user` - User.
 
