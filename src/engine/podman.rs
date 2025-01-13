@@ -45,6 +45,15 @@ impl EnginePodman {
         })
     }
 
+    fn ensure_pod<S: AsRef<str>>(&self, pod: S) {
+        let podman = self.podman_bin.to_string();
+        let pod = pod.as_ref();
+
+        if run_cmd!($podman pod exists $pod).is_err() {
+            _ = run_fun!($podman pod create $pod &>/dev/null);
+        }
+    }
+
     pub fn start<S: AsRef<str>>(&self, name: S, action: &Option<ExistsAction>) -> Result<()> {
         let podman = self.podman_bin.to_string();
         let image = self.image.to_string();
@@ -81,13 +90,11 @@ impl EnginePodman {
         }
 
         if let Some(pod) = &self.pod {
+            self.ensure_pod(pod);
             options.push("--pod".to_string());
-            if run_cmd!($podman pod exists $pod).is_ok() {
-                options.push(pod.to_string());
-            } else {
-                options.push(format!("new:{}", pod));
-            }
+            options.push(pod.to_string());
         }
+
         run_fun!($podman run $[options] $image)?;
         Ok(())
     }
