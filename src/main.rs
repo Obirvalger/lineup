@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use anyhow::Error as AnyhowError;
 use anyhow::Result;
 use clap::{CommandFactory, Parser};
@@ -60,6 +62,15 @@ fn parse_extra_vars(extra_vars: &[String]) -> Result<Vars> {
     vars.render(&tera::Context::new(), "extra vars")
 }
 
+fn find_manifest() -> PathBuf {
+    let local = PathBuf::from("LM.local.toml");
+    if local.exists() {
+        local
+    } else {
+        PathBuf::from("LM.toml")
+    }
+}
+
 fn inner_main() -> Result<()> {
     config::init()?;
     files::install_all()?;
@@ -94,7 +105,11 @@ fn inner_main() -> Result<()> {
         }
         let thread_pool = thread_pool_builder.build()?;
 
-        let manifest = &args.manifest;
+        let manifest = if let Some(manifest) = &args.manifest {
+            manifest.to_owned()
+        } else {
+            find_manifest()
+        };
 
         thread_pool.install(|| -> Result<()> {
             let extra_vars = parse_extra_vars(&args.extra_vars)?;
