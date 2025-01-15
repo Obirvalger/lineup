@@ -94,7 +94,10 @@ impl EngineDocker {
     pub fn remove<S: AsRef<str>>(&self, name: S) -> Result<()> {
         let docker = self.docker_bin.to_string();
         let name = self.n(name);
-        run_fun!($docker rm -f $name)?;
+
+        if run_cmd!($docker inspect -f "{{.Id}}" $name >/dev/null 2>&1).is_ok() {
+            run_fun!($docker rm -f $name)?;
+        }
 
         Ok(())
     }

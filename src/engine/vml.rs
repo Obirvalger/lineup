@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use anyhow::Result;
-use cmd_lib::run_cmd;
+use cmd_lib::{run_cmd, run_fun};
 
 use crate::cmd::Cmd;
 use crate::engine::{EngineBase, ExistsAction};
@@ -117,9 +117,13 @@ impl EngineVml {
     }
 
     pub fn remove<S: AsRef<str>>(&self, name: S) -> Result<()> {
-        let vml = self.vml_cmd.to_owned();
+        let vml = &self.vml_cmd.to_owned();
         let name = self.n(name);
-        run_cmd!($[vml] rm -f -n $name)?;
+
+        let exists = run_fun!($[vml] ls -a $name)?;
+        if !exists.is_empty() {
+            run_cmd!($[vml] rm -f -n $name)?;
+        }
 
         Ok(())
     }

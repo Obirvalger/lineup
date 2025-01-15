@@ -107,7 +107,11 @@ impl EngineIncus {
     pub fn remove<S: AsRef<str>>(&self, name: S) -> Result<()> {
         let incus = self.incus_bin.to_string();
         let name = self.n(name);
-        run_fun!($incus rm -qf $name)?;
+
+        let exists = run_fun!($incus ls -f json $name)?;
+        if exists != "[]" {
+            run_fun!($incus rm -qf $name)?;
+        }
 
         Ok(())
     }

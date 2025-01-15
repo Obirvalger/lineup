@@ -108,10 +108,8 @@ impl Worker {
     }
 
     pub fn ensure_remove(&mut self) -> Result<()> {
-        if self.setup {
-            self.engine.remove(&self.name)?;
-            self.setup = false;
-        }
+        self.engine.remove(&self.name)?;
+        self.setup = false;
 
         Ok(())
     }

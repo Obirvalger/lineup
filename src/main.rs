@@ -73,6 +73,10 @@ fn inner_main() -> Result<()> {
     if let Some(command) = args.command {
         match command {
             Commands::Completion { shell } => print_completions(shell, &mut Cli::command()),
+            Commands::Clean { manifest } => {
+                let mut runner = Runner::from_manifest(manifest, &Default::default())?;
+                runner.clean()?;
+            }
         }
     } else {
         let mut thread_pool_builder = ThreadPoolBuilder::new();

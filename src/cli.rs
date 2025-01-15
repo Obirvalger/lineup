@@ -8,7 +8,13 @@ use crate::engine::ExistsAction;
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    Completion { shell: Shell },
+    Completion {
+        shell: Shell,
+    },
+    Clean {
+        #[arg(long, short, default_value = "LM.toml")]
+        manifest: PathBuf,
+    },
 }
 
 #[derive(Parser, Debug)]
