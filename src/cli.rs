@@ -14,8 +14,8 @@ pub enum Commands {
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None, infer_long_args(true))]
 pub struct Cli {
-    #[arg(long, short, default_value = "LM.toml")]
-    pub manifest: PathBuf,
+    #[arg(long, short)]
+    pub manifest: Option<PathBuf>,
 
     #[arg(long, value_name("NUM"))]
     pub num_threads: Option<usize>,
