@@ -26,6 +26,13 @@ name = "Disable services {{ services }}"
 shell.command = "systemctl disable {{ now | cond(if='--now') }} {{ services | quote }}"
 
 
+[[tasklines.restart]]
+ensure.vars = ["services: array | string"]
+
+[[tasklines.restart]]
+name = "Restart services {{ services }}"
+shell.command = "systemctl restart {{ services | quote }}"
+
 [[tasklines.start]]
 ensure.vars = ["services: array | string"]
 
