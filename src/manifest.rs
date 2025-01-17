@@ -220,9 +220,12 @@ impl Render for EngineIncus {
     fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
         let place = format!("docker engine in {}", place.as_ref());
         let memory = self.memory.render(context, format!("memory in {}", place))?;
+        let net = self.net.render(context, format!("net in {}", place))?;
+        let nproc = self.nproc.render(context, format!("nproc in {}", place))?;
         let image = self.image.render(context, format!("image in {}", place))?;
+        let user = self.user.render(context, format!("user in {}", place))?;
         let base = self.base.render(context, format!("base in {}", place))?;
-        Ok(Self { memory, image, base, ..self.to_owned() })
+        Ok(Self { memory, net, nproc, image, user, base, ..self.to_owned() })
     }
 }
 
