@@ -583,11 +583,15 @@ items = ["a", 2]
 ```toml
 items = { start = 1, end = 6, step = 2 }
 ```
-3. Elements of an array variable or keys of an object variable with given name
+3. Elements of a json array or keys of a json object
+```toml
+items.json = "{{ ['a', 'b'] | json }}"
+```
+4. Elements of an array variable or keys of an object variable with given name
 ```toml
 items.var = "commands"
 ```
-4. Shell command, run on host, which stdout splitted by newlines
+5. Shell command, run on host, which stdout splitted by newlines
 ```toml
 items = { command = "ls -d /lib*" }
 ```

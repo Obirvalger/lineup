@@ -60,6 +60,8 @@ pub enum Error {
     WorkerSetupFailed(String),
     #[error("argument `{0}` has wrong type")]
     WrongArgumentType(String),
+    #[error("items json `{0}` has wrong type")]
+    WrongItemsJsonType(String),
     #[error("items variable `{0}` has wrong type")]
     WrongItemsVarType(String),
     #[error("value has wrong type")]

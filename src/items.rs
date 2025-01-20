@@ -42,11 +42,18 @@ pub struct ItemsVariable {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
+pub struct ItemsJson {
+    pub json: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub enum Items {
     Words(Vec<StringOrInt>),
     Seq(ItemsSeq),
     Command(ItemsCommand),
+    Json(ItemsJson),
     Variable(ItemsVariable),
 }
 
@@ -64,6 +71,28 @@ impl Items {
                 let cmd = command.command.render(context, "list items command")?;
                 let out = run_fun!(sh -c $cmd)?;
                 out.lines().map(|l| l.to_string()).collect::<Vec<String>>()
+            }
+            Items::Json(json) => {
+                let json_str = json.json.render(context, "list items json")?;
+                let json = serde_json::from_str(&json_str)?;
+                match json {
+                    Value::Array(a) => {
+                        let mut items = Vec::with_capacity(a.len());
+                        for item in a {
+                            let item = match item {
+                                Value::Bool(b) => b.to_string(),
+                                Value::Null => "".to_string(),
+                                Value::Number(n) => n.to_string(),
+                                Value::String(s) => s.to_string(),
+                                _ => bail!(Error::WrongItemsJsonType(json_str)),
+                            };
+                            items.push(item);
+                        }
+                        items
+                    }
+                    Value::Object(o) => o.keys().map(|k| k.to_string()).collect(),
+                    _ => bail!(Error::WrongItemsJsonType(json_str)),
+                }
             }
             Items::Variable(variable) => {
                 let var_name = variable.variable.render(context, "list items variable")?;
