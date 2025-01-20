@@ -4,6 +4,7 @@ Lineup manifest consists of several sections, most of which are optional.
 
 * [use](#Use) - Use items from other files;
 * [vars](#Vars) - Set global variables;
+* [networks](#Networks) - Define networks;
 * [workers](#Workers) - Define workers;
 * [default](#Default) - Overwrite defaults;
 * [tasklines](#Tasklines) - Define tasklines;
@@ -102,6 +103,28 @@ There are list of special variable set by lineup:
 * [result](#Task-result) - Result of previously run task;
 * [taskline](#Tasklines) - Name of the current taskline;
 * [worker](#Workers) - Name of the current worker.
+
+# Networks
+Networks describe virtual networks for workers. It is a table with network names as keys. Values
+are network structs. The struct is represented via table. Keys are:
+* [engine](#Network-engine) - Specify parameters of concrete engine (e.g. incus);
+
+## Network engine
+There is one egine type:
+* [incus](#Network-engine-incus);
+
+### Network engine incus
+Network for container engine incus.
+Incus specific options are:
+* `address` - Ipv4 address;
+* `nat` - Bool value controlled using of a ipv4 nat.
+
+Example of creating incus network `lpt`:
+```
+[networks.lpt.engine.incus]
+address = "192.168.30.1/24"
+```
+
 
 
 # Workers

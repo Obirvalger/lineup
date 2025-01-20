@@ -17,6 +17,7 @@ use crate::template::Context;
 use crate::use_unit::UseUnit;
 use crate::vars::{Maps, Vars};
 
+pub type Networks = BTreeMap<String, Network>;
 pub type Workers = BTreeMap<String, Worker>;
 pub type Tasklines = BTreeMap<String, Taskline>;
 pub type Taskset = BTreeMap<String, TasksetElem>;
@@ -44,6 +45,40 @@ pub struct Use {
     pub vars: Vec<UseUnit>,
     #[serde(default)]
     pub tasklines: Vec<UseUnit>,
+}
+
+fn default_network_engine_incus_nat() -> bool {
+    true
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
+pub struct NetworkEngineIncus {
+    pub address: String,
+    #[serde(default = "default_network_engine_incus_nat")]
+    pub nat: bool,
+}
+
+impl Render for NetworkEngineIncus {
+    fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
+        let place = format!("incus network engine in {}", place.as_ref());
+        let address = self.address.render(context, format!("address in {}", place))?;
+        Ok(Self { address, ..self.to_owned() })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NetworkEngine {
+    Incus(NetworkEngineIncus),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
+pub struct Network {
+    pub engine: NetworkEngine,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -352,6 +387,8 @@ pub struct Manifest {
     pub use_: Use,
     #[serde(default)]
     pub default: Defaults,
+    #[serde(default)]
+    pub networks: Networks,
     #[serde(default)]
     pub workers: Workers,
     #[serde(default = "default_taskset")]

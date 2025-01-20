@@ -14,6 +14,7 @@ use crate::engine::ExistsAction;
 use crate::error::Error;
 use crate::manifest::{Manifest, Tasklines, Taskset};
 use crate::module;
+use crate::network::Network;
 use crate::render::Render;
 use crate::taskline::Taskline;
 use crate::template::Context;
@@ -28,6 +29,7 @@ pub struct Runner {
     pub skip_tasks: Vec<String>,
     pub tasklines: Tasklines,
     pub vars: Vars,
+    pub networks: Vec<Network>,
     pub workers: Vec<Worker>,
     pub dir: PathBuf,
     worker_exists: Option<ExistsAction>,
@@ -155,12 +157,14 @@ impl Runner {
         }
         tasklines.extend(manifest_tasklines);
 
+        let networks = Network::from_manifest_networks(&manifest.networks, &context)?;
+
         let workers =
             Worker::from_manifest_workers(&manifest.workers, &defaults.worker, &context, &dir)?;
         let worker_exists = None;
         let skip_tasks = vec![];
 
-        Ok(Self { dir, taskset, skip_tasks, tasklines, vars, workers, worker_exists })
+        Ok(Self { dir, taskset, skip_tasks, tasklines, vars, networks, workers, worker_exists })
     }
 
     pub fn add_extra_vars(&mut self, vars: Vars) {
@@ -180,6 +184,18 @@ impl Runner {
             worker.ensure_remove()?;
         }
 
+        for network in &mut self.networks {
+            network.remove()?;
+        }
+
+        Ok(())
+    }
+
+    fn setup_networks(&self) -> Result<()> {
+        for network in &self.networks {
+            network.setup()?;
+        }
+
         Ok(())
     }
 
@@ -196,6 +212,8 @@ impl Runner {
             .iter()
             .map(|(n, t)| (n.to_string(), t.requires.to_owned()))
             .collect::<BTreeMap<_, _>>();
+
+        self.setup_networks()?;
 
         for layer in tsort(&tasks_graph, "taskset requires")? {
             let mut workers_by_task = BTreeMap::new();

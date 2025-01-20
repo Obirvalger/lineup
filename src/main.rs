@@ -27,6 +27,7 @@ mod items;
 mod manifest;
 mod matches;
 mod module;
+mod network;
 mod render;
 mod runner;
 mod string_or_int;
