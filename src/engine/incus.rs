@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use cmd_lib::{run_cmd, run_fun};
@@ -116,6 +116,21 @@ impl EngineIncus {
         Ok(())
     }
 
+    fn strip_same_name_dst<S: AsRef<Path>, D: AsRef<Path>>(src: S, dst: D) -> PathBuf {
+        let src = src.as_ref();
+        let dst = dst.as_ref();
+        if let Some(src_name) = src.file_name() {
+            if let Some(dst_name) = dst.file_name() {
+                if src_name == dst_name {
+                    let dst = dst.parent().expect("Destination has basename but lacks a dirname");
+                    return dst.to_owned();
+                }
+            }
+        }
+
+        dst.to_owned()
+    }
+
     pub fn copy<N: AsRef<str>, S: AsRef<Path>, D: AsRef<Path>>(
         &self,
         name: N,
@@ -123,10 +138,18 @@ impl EngineIncus {
         dst: D,
     ) -> Result<()> {
         let src = src.as_ref();
-        let dst = dst.as_ref();
+        let mut dst = dst.as_ref().to_owned();
         let incus = self.incus_bin.to_string();
         let name = self.n(name);
-        run_cmd!($incus file push $src $name/$dst)?;
+
+        let mut options = vec![];
+        if src.is_dir() {
+            options.push("-r");
+            // NOTE incus in resursive mode treats destination as target directory
+            dst = Self::strip_same_name_dst(src, dst);
+        }
+
+        run_cmd!($incus file push $[options] $src $name/$dst)?;
 
         Ok(())
     }
@@ -138,10 +161,19 @@ impl EngineIncus {
         dst: D,
     ) -> Result<()> {
         let src = src.as_ref();
-        let dst = dst.as_ref();
+        let mut dst = dst.as_ref().to_owned();
         let incus = self.incus_bin.to_string();
         let name = self.n(name);
-        run_cmd!($incus file pull $name/$src $dst)?;
+
+        let src_dir = run_fun!($incus exec $name -- test -d $src).is_ok();
+        let mut options = vec![];
+        if src_dir {
+            options.push("-r");
+            // NOTE incus in resursive mode treats destination as target directory
+            dst = Self::strip_same_name_dst(src, dst);
+        }
+
+        run_cmd!($incus file pull $[options] $name/$src $dst)?;
 
         Ok(())
     }
