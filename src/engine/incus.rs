@@ -77,7 +77,7 @@ impl EngineIncus {
         match action {
             ExistsAction::Fail => (),
             ExistsAction::Ignore => {
-                let exists = run_fun!($incus ls -f json $name)?;
+                let exists = run_fun!($incus ls -f json name=$name)?;
                 if exists != "[]" {
                     let stopped = run_fun!($incus ls status=stopped -f json $name)?;
                     if stopped != "[]" {
