@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::env;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -22,6 +23,19 @@ use crate::tsort::tsort;
 use crate::use_unit::UseUnit;
 use crate::vars::Vars;
 use crate::worker::Worker;
+
+fn save_layers(layers: &Vec<Vec<String>>) -> Result<()> {
+    if let Ok(layers_file) = env::var("LINEUP_LAYERS") {
+        let context = format!("save layers to `{}`", layers_file);
+        fs::write(
+            layers_file,
+            serde_json::to_string_pretty(layers).with_context(|| context.to_string())?,
+        )
+        .context(context)?;
+    }
+
+    Ok(())
+}
 
 #[derive(Clone, Debug)]
 pub struct Runner {
@@ -215,7 +229,10 @@ impl Runner {
 
         self.setup_networks()?;
 
-        for layer in tsort(&tasks_graph, "taskset requires")? {
+        let layers = tsort(&tasks_graph, "taskset requires")?;
+        save_layers(&layers)?;
+
+        for layer in layers {
             let mut workers_by_task = BTreeMap::new();
 
             // setup workers by task sequentially to ensure the same worker does not run
