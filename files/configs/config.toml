@@ -16,3 +16,10 @@ clean = true
 check = true
 stdout = { log = "Trace", print = false }
 stderr = { log = "Warn", print = false }
+
+
+# Control errors
+[error]
+backtrace = true
+context = true
+context-lines = 10

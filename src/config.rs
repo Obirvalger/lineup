@@ -1,6 +1,7 @@
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{LazyLock, OnceLock};
 
 use anyhow::{Context, Result};
@@ -13,6 +14,11 @@ use crate::task_type::CmdOutput;
 pub static CONFIG: LazyLock<Config> =
     LazyLock::new(|| CONFIG_INNER.get().expect("Config should be initialized").to_owned());
 static CONFIG_INNER: OnceLock<Config> = OnceLock::new();
+static CONFIG_INITIALIZED: AtomicBool = AtomicBool::new(false);
+
+pub fn config_initialized() -> bool {
+    CONFIG_INITIALIZED.load(Ordering::Relaxed)
+}
 
 pub fn init() -> Result<()> {
     if !config_dir().join("config.toml").exists() {
@@ -21,6 +27,7 @@ pub fn init() -> Result<()> {
 
     let config = Config::new()?;
     CONFIG_INNER.get_or_init(|| config);
+    CONFIG_INITIALIZED.store(true, Ordering::Relaxed);
 
     Ok(())
 }
@@ -67,6 +74,40 @@ pub struct Task {
     pub command: CommandTask,
 }
 
+fn default_error_backtrace() -> bool {
+    true
+}
+
+fn default_error_context() -> bool {
+    true
+}
+
+fn default_error_context_lines() -> usize {
+    10
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
+pub struct Error {
+    #[serde(default = "default_error_backtrace")]
+    pub backtrace: bool,
+    #[serde(default = "default_error_context")]
+    pub context: bool,
+    #[serde(default = "default_error_context_lines")]
+    pub context_lines: usize,
+}
+
+impl Default for Error {
+    fn default() -> Self {
+        Self {
+            backtrace: default_error_backtrace(),
+            context: default_error_context(),
+            context_lines: default_error_context_lines(),
+        }
+    }
+}
+
 fn default_install_embedded_modules() -> bool {
     true
 }
@@ -91,6 +132,8 @@ pub struct Config {
     pub clean: bool,
     #[serde(default)]
     pub task: Task,
+    #[serde(default)]
+    pub error: Error,
 }
 
 fn expand_tilde(path: &Path) -> PathBuf {

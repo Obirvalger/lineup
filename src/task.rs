@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
+use anyhow::Context as AnyhowContext;
 use anyhow::Result;
 use log::info;
 use rayon_cond::CondIterator;
@@ -134,7 +135,11 @@ impl Task {
                             };
                         }
 
-                        self.task_type.run(&context, dir, tasklines, worker)
+                        let mut res = self.task_type.run(&context, dir, tasklines, worker);
+                        if self.items_table.is_some() {
+                            res = res.with_context(|| format!("item: `{}`", item));
+                        }
+                        res
                     })
                     .collect::<Result<Vec<_>, _>>()?;
 

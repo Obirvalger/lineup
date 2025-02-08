@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use anyhow::Context as AnyhowContext;
 use thiserror::Error as ThisError;
 
 #[derive(Debug, ThisError)]
@@ -68,4 +69,23 @@ pub enum Error {
     WrongValueType,
     #[error("variable `{0}` must be of type `{1}`")]
     WrongVarType(String, String),
+}
+
+impl Error {
+    pub fn result<T, K, V, M>(self, context: M) -> Result<T, anyhow::Error>
+    where
+        K: ToString,
+        V: ToString,
+        M: IntoIterator<Item = (K, V)>,
+    {
+        let mut context_pairs = Vec::new();
+        for (k, v) in context {
+            context_pairs.push((k.to_string(), v.to_string()));
+        }
+        let context = serde_json::to_string(&context_pairs).expect("Can't serialize string pairs");
+
+        let result = Err(anyhow::Error::new(self));
+
+        result.with_context(|| format!("context_json: {context}"))
+    }
 }

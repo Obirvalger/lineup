@@ -18,6 +18,7 @@ use crate::engine::ssh::EngineSsh;
 use crate::engine::vml::EngineVml;
 use crate::error::Error;
 use crate::manifest::Engine as ManifestEngine;
+use crate::matches::Matches;
 use crate::task_type::{CmdParams, SpecialTypeType};
 use crate::template::Context;
 
@@ -180,6 +181,50 @@ impl Engine {
         }
     }
 
+    fn run_wrap_error(
+        error: Error,
+        matches: Option<&Matches>,
+        params: &CmdParams,
+        out: &CmdOut,
+    ) -> Result<CmdOut> {
+        let mut error_context = Vec::new();
+
+        if let Some(stdin) = &params.stdin {
+            error_context.push(("stdin", stdin.to_string()));
+        }
+
+        let stdout = out.stdout().trim_end().to_string();
+        if !stdout.is_empty() || matches.is_some() {
+            error_context.push(("stdout", stdout));
+        }
+        let stderr = out.stderr().trim_end().to_string();
+        if !stderr.is_empty() || matches.is_some() {
+            error_context.push(("stderr", stderr));
+        }
+
+        if let Some(matches) = matches {
+            error_context.push((
+                "matches",
+                serde_json::to_string_pretty(matches).expect("Can't serialize matches"),
+            ));
+        }
+
+        if let Some(rc) = out.rc() {
+            if params.success_codes != [0] {
+                error_context.push(("rc", rc.to_string()));
+                error_context.push((
+                    "success codes",
+                    serde_json::to_string(&params.success_codes)
+                        .expect("Can't serialize success codes"),
+                ));
+            } else if rc != 0 {
+                error_context.push(("rc", rc.to_string()));
+            }
+        }
+
+        error.result(error_context)
+    }
+
     fn run<S: AsRef<str>>(
         &self,
         command_in_error: S,
@@ -200,18 +245,24 @@ impl Engine {
         params.stderr.show(&stderr);
 
         if params.check.unwrap_or(CONFIG.task.command.check) && !out.success() {
-            bail!(Error::CommandFailedExitCode(command_in_error.as_ref().to_string()));
+            let error = Error::CommandFailedExitCode(command_in_error.as_ref().to_string());
+            return Self::run_wrap_error(error, None, params, &out);
         }
 
         if let Some(matches) = &params.failure_matches {
             if matches.is_match(&stdout, &stderr)? {
-                bail!(Error::CommandFailedFailureMatches(command_in_error.as_ref().to_string()));
+                let error =
+                    Error::CommandFailedFailureMatches(command_in_error.as_ref().to_string());
+                return Self::run_wrap_error(error, Some(matches), params, &out);
             }
         }
 
         if let Some(matches) = &params.success_matches {
             if !matches.is_match(&stdout, &stderr)? {
-                bail!(Error::CommandFailedSuccsessMatches(command_in_error.as_ref().to_string()));
+                let error =
+                    Error::CommandFailedSuccsessMatches(command_in_error.as_ref().to_string());
+
+                return Self::run_wrap_error(error, Some(matches), params, &out);
             }
         }
 

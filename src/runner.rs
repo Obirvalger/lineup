@@ -276,8 +276,11 @@ impl Runner {
                     {
                         let mut context = context.to_owned();
                         context.insert("worker", &worker.name);
-                        let result =
-                            task.run(&Some(name), &context, &self.dir, &self.tasklines, worker)?;
+                        let result = task
+                            .run(&Some(name), &context, &self.dir, &self.tasklines, worker)
+                            .with_context(|| {
+                                format!("taskset task: `{}`, worker: `{}`", name, &worker.name)
+                            })?;
                         if let Some(exception) = result.as_exception() {
                             warn!("Got exception: {:?}", exception);
                         }

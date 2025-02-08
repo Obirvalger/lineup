@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use anyhow::Context as AnyhowContext;
 use anyhow::{bail, Result};
 use log::{info, log, warn, LevelFilter};
 use serde::{Deserialize, Serialize};
@@ -562,9 +563,18 @@ impl TaskType {
                 context.insert("taskline", &taskline_str);
 
                 let mut value = Value::Null;
-                for task in taskline.as_line().expect("get not line variant of taskline") {
-                    let result =
-                        task.task.run(&task.name, &context, &dir, &new_tasklines, worker)?;
+                for (iter, task) in taskline
+                    .as_line()
+                    .expect("get not line variant of taskline")
+                    .iter()
+                    .enumerate()
+                {
+                    let result = task
+                        .task
+                        .run(&task.name, &context, &dir, &new_tasklines, worker)
+                        .with_context(|| {
+                            format!("taskline: `{}`, number: `{}`", taskline_str, iter)
+                        })?;
 
                     if let Some(v) = result.as_value() {
                         value = v.to_owned();
