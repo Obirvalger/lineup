@@ -1,36 +1,34 @@
 # Manifest
-
 Lineup manifest consists of several sections, most of which are optional.
-
 * [use](#Use) - Use items from other files;
 * [vars](#Vars) - Set global variables;
 * [networks](#Networks) - Define networks;
 * [workers](#Workers) - Define workers;
 * [default](#Default) - Overwrite defaults;
 * [tasklines](#Tasklines) - Define tasklines;
-* [taskset](#Taskset) Define taskset;
-* [extend](#Extend) Extend some other sections.
+* [taskset](#Taskset) - Define taskset;
+* [extend](#Extend) - Extend some other sections.
 
 
 # Use
-Add items from other files to the main manifest. It has two subsections -
-`vars` and `tasklines`. They are represented via array of tables with keys:
-* `module` - Name of a [module](modules.md). Or path to the file containing
-    the taskline, if it starts with `/` or `.`, it is interpreted as a path;
-* `prefix` - Add prefix to names. By default use module or file name. To use
-    items without prefix, set it to an empty string `""`;
-* `items` - Array of names of items used from module. By default use all items.
+Add items from other files to the main manifest. It has two subsections: `vars`
+and `tasklines`. They are represented as an array of tables with keys:
+* `module` - Name of a [module](modules.md). If it starts with `/` or `.`, it
+    is interpreted as a path;
+* `prefix` - Add prefix to names. By default, use module or file name. To use
+    items without a prefix, set it to an empty string `""`;
+* `items` - Array of names of items used from the module. By default, use all items.
 
-For short just module name could be used instead of a table.
-To work properly with `vars` the `prefix` should contain only alphanumerals
-and `_`. When get default prefix from a module name, `-` will be substituted
+For short, just the module name could be used instead of a table.  To work
+properly with `vars`, the `prefix` should contain only alphanumerals and `_`.
+When getting the default prefix from a module name, `-` will be substituted
 with `_`.
 
 Example of using a variable `update` and all tasklines from modules `apt-get`
 and `useradd`:
 ```toml
 [use]
-vars = [{ module = "apt-get", items = ["update"]}]
+vars = [{ module = "apt-get", items = ["update"] }]
 tasklines = ["apt-get", "useradd"]
 
 
@@ -48,8 +46,9 @@ vars.user = "user"
 ```
 
 # Vars
-This is a table with string keys - [var definition](#Var-defenition) and
-values of any type. [Templates](templates.md) in strings are processed.
+This is a table with string keys - [var definition](#Var-definition) and values
+of any type. [Templates](templates.md) in strings are processed.
+
 For example, a bool variable `build` stores the user's response to a question:
 ```toml
 [vars]
@@ -57,11 +56,11 @@ build = "{{ confirm(msg='Do you want to build package?', default=true) }}"
 ```
 
 ## Var definition
-Variable defined by string containing variable name with optional
+A variable is defined by a string containing the variable name with an optional
 [type](#Var-type) suffix and [kind](#Var-kind) prefix.
 
 ## Var type
-Variable type writes after variable name delimited by `:`.
+The variable type is written after the variable name, delimited by `:`.
 There are possible types:
 * `bool`, `b`;
 * `number`, `n`;
@@ -73,15 +72,15 @@ There are possible types:
 * `object`, `o`.
 
 Type union can be created by writing several types separated by `|`.
-For example, [ensure](#Ensure-task) variable `packages` should be `array` or
-`string` in `install` taskline:
+For example, the [ensure](#Ensure-task) variable `packages` should be `array`
+or `string` in the `install` taskline:
 ```toml
 [[tasklines.install]]
 ensure.vars = ["packages: array | string"]
 ```
 
 ## Var kind
-Variable kind writes before variable name delimited by `%`.
+The variable kind is written before the variable name, delimited by `%`.
 There are possible kinds:
 * `fs` - Store a variable on the filesystem (use template filter or
     function `fs` to read value);
@@ -92,46 +91,47 @@ Example of appending `-m` to the flags array:
 ```toml
 vars."json % flags" = "{{ flags | concat(with='-m') | json }}"
 ```
-Example of storing empty array to a `fs` variable `fs_var`:
+Example of storing an empty array in a `fs` variable `fs_var`:
 ```toml
 vars."fs % fs_var" = []
 ```
 
 ## Special variables
-There are list of special variable set by lineup:
+There is a list of special variables set by lineup:
 * [item](#Items) - Current item;
+* `manifest_dir` - The directory where manifest is located;
 * [result](#Task-result) - Result of previously run task;
 * [taskline](#Tasklines) - Name of the current taskline;
 * [worker](#Workers) - Name of the current worker.
 
 # Networks
-Networks describe virtual networks for workers. It is a table with network names as keys. Values
-are network structs. The struct is represented via table. Keys are:
-* [engine](#Network-engine) - Specify parameters of concrete engine (e.g. incus);
+Networks describe virtual networks for workers. It is a table with network
+names as keys. Values are network structs. The struct is represented via a
+table. Keys are:
+* [engine](#Network-engine) - Specify parameters of a concrete engine (e.g., incus);
 
 ## Network engine
-There is one egine type:
+There is one engine type:
 * [incus](#Network-engine-incus);
 
 ### Network engine incus
 Network for container engine incus.
-Incus specific options are:
-* `address` - Ipv4 address;
-* `nat` - Bool value controlled using of a ipv4 nat.
+Incus-specific options are:
+* `address` - ipv4 address;
+* `nat` - Bool value controlling the use of ipv4 nat.
 
-Example of creating incus network `lpt`:
-```
+Example of creating an incus network `lpt`:
+```toml
 [networks.lpt.engine.incus]
 address = "192.168.30.1/24"
 ```
 
 
-
 # Workers
-Workers describe runners of tasks (e.g. containers or virtual machines).
+Workers describe runners of tasks (e.g., containers or virtual machines).
 It is a table with worker names as keys. Values are worker structs.
-The struct is represented via table. Keys are:
-* [engine](#Engine) - Specify parameters of concrete engine (e.g. docker container);
+The struct is represented via a table. Keys are:
+* [engine](#Engine) - Specify parameters of a concrete engine (e.g., docker container);
 * [items](#Items) - Multiplier to create several workers;
 * `table-by-item` - Table indexed by item value;
 * `table-by-name` - Table indexed by name.
@@ -152,7 +152,7 @@ An array of [tasks](#Task) that are run sequentially.
 
 
 # Taskline
-A simple way to use "default" taskline. Same as:
+A simple way to use the "default" taskline. Same as:
 ```toml
 [tasklines.""]
 ```
@@ -162,34 +162,34 @@ A simple way to use "default" taskline. Same as:
 A table with names as keys and [tasks](#Task) as values.
 Tasks in a taskset are supposed to run concurrently.
 To provide order, a `requires` array could be used.
-For example, the task `build` need to be run after the task setup:
+For example, the task `build` needs to be run after the task `setup`:
 ```toml
 [taskset.build]
 requires = ["setup"]
 # Other task parameters
 ```
-Also tasks in a taskset could specify workers to run on using the
-`workers` array, which consists of regexes of worker names.
-By default, tasks run on all workers.
 
-Taskset task specify `provide-workers`. It is an array of workers that are
-available in this task and all task it runned. It is useful to
-[run taskset](#RunTaskset-task) tasks. By default it is `[]`.
+Also, tasks in a taskset could specify workers to run on using the `workers`
+array, which consists of regexes of worker names. By default, tasks run on all
+workers.
 
+Taskset tasks specify `provide-workers`. It is an array of workers that are
+available in this task and all tasks it runs. It is useful for
+[run taskset](#RunTaskset-task) tasks. By default, it is `[]`.
 
 # Task
 Tasks are defined by a [task type](#Task-types) and have some parameters:
-* `condition` - A shell command running on the worker.
-    The task does not run if this fails;
+* `condition` - A shell command running on the worker. The task does not run if
+    this fails;
+* [items](#Items) - Multiplier to create several tasks;
 * `parallel` - A bool controlling whether to run items tasks in parallel;
-    [items](#Items) tasks should be executed in parallel;
 * [vars](#Task-vars) - Set variables;
 * `clean-vars` - If true, run task without previously defined variables;
 * `table` - Table.
 
 ## Task result
-Every task set a `result` variable, contained a result of the task running.
-If `result` variable is not set it has `null` value.
+Every task sets a `result` variable, containing the result of the task running.
+If the `result` variable is not set, it has a `null` value.
 
 ## Task types
 There are several types of tasks:
@@ -210,13 +210,13 @@ There are several types of tasks:
 * [warn](#Warn-task) - Show message with log warn.
 
 ## Break task
-Stops execution of a taskline with name given in `taskline` parameter. By
-default it breaks the most inner taskline. Returns a previous result by
-default, otherwise result could be set via a `result` parameter.
+Stops execution of a taskline with a name given in the `taskline` parameter. By
+default, it breaks the most inner taskline. Returns a previous result by
+default, otherwise, the result could be set via a `result` parameter.
 
 **Return:** `result`.
 
-Example of breaking taskline `break` before running failing command:
+Example of breaking taskline `break` before running a failing command:
 ```toml
 [[tasklines.break]]
 break = {}
@@ -226,7 +226,7 @@ shell.cmd = "false"
 ```
 
 ## Dummy task
-The only one parameter `result` specifies return value. By default it is
+The only parameter `result` specifies the return value. By default, it is the
 previous `result`.
 
 **Return:** `result`.
@@ -238,18 +238,20 @@ vars."fs % fs_var" = "LiL"
 ```
 
 ## Ensure task
-It has field `vars` with an array of variable names. Check them to be set.
+It has a field `vars` with an array of variable names. Check them to be set.
 
 **Return:** `true`.
 
-Example of ensuring two variable `user` and `vars.lil` are set:
+Example of ensuring two variables `user` and `vars.lil` are set:
 ```toml
 ensure.vars = ["user", "vars.lil"]
 ```
 
 ## Error task
-Raises an error with message from a `msg` parameter. Exits process with a `1`
-code by default, otherwise return code could be set via a `code` parameter.
+
+Raises an error with a message from the `msg` parameter. Exits the process with
+a `1` code by default, otherwise, the return code could be set via the `code`
+parameter.
 
 **Return:** `result`.
 
@@ -260,10 +262,10 @@ error.code = 3
 ```
 
 ## Exec task
-Consists of an `args` array of strings represented command and
+Consists of an `args` array of strings representing a command and
 [common command parameters](#Common-command-parameters).
 
-**Return:** output of running command. Controll output processing by
+**Return:** Output of running command. Control output processing by
 [command parameters result](#Command-parameters-result).
 
 Example of showing date in utc:
@@ -274,8 +276,8 @@ exec.stdout.print = true
 
 ## File task
 A file task has several fields:
-* `dst` - Destination path on worker to store the file;
-* `src` - Source path on host to get the file;
+* `dst` - Destination path on the worker to store the file;
+* `src` - Source path on the host to get the file;
 * `content` - String with contents of the file.
 
 **Return:** `dst`.
@@ -288,9 +290,9 @@ file.content = "Test"
 
 ## Get task
 A get task has several fields:
-* `src` - Source path on worker to get the file;
-* `dst` - Destination path on host to store the file. By default store file
-    in the same directory as manifest located with a source file name.
+* `src` - Source path on the worker to get the file;
+* `dst` - Destination path on the host to store the file. By default, store the
+    file in the same directory as the manifest located with a source file name.
 
 **Return:** `dst`.
 
@@ -300,12 +302,13 @@ get.src = "/etc/os-release"
 ```
 
 ## Info task
-It shows message from a `msg` parameter with a log info. Returns a previous
-result by default, otherwise result could be set via a `result` parameter.
+It shows a message from the `msg` parameter with a log info. Returns the
+previous result by default, otherwise, the result could be set via the `result`
+parameter.
 
 **Return:** `result`.
 
-Example of greeting worker:
+Example of greeting the worker:
 ```toml
 info.msg = "Hello {{ worker }}!"
 ```
@@ -313,7 +316,7 @@ info.msg = "Hello {{ worker }}!"
 ## Run task
 Run a taskline from manifest tasklines.
 
-**Return:** `result` of last task in taskline.
+**Return:** `result` of the last task in the taskline.
 
 Example of a task installing `apt-repo` with `apt-get`:
 ```toml
@@ -332,19 +335,19 @@ Run a taskline from a file. Field:
 * `module` - Name of a [module](modules.md). Or path to the file containing
     the taskline, if it starts with `/` or `.`, it is interpreted as a path.
 
-**Return:** `result` of last task in taskline.
+**Return:** `result` of the last task in the taskline.
 
 Example of a task installing `apt-repo` with `apt-get`:
 ```toml
 run-taskline = { module = "apt-get", taskline = "install" }
-vars.packages = [ "apt-repo" ]
+vars.packages = ["apt-repo"]
 ```
 
 ## RunTaskset task
 Run a taskset from a file. Field:
 * `module` - Name of a [module](modules.md). Or path to the file containing
-    the taskline, if it starts with `/` or `.`, it is interpreted as a path;
-* `worker` - Describes [workers](#RunTaskset-task-worker) to run taskset on.
+    the taskset, if it starts with `/` or `.`, it is interpreted as a path;
+* `worker` - Describes [workers](#RunTaskset-task-worker) to run the taskset on.
 
 **Return:** `null`.
 
@@ -354,12 +357,12 @@ Example of running a taskset from the file `./LM-ts.toml`:
 run-taskline.module = "./LM-ts.toml"
 run-taskline.worker = "all"
 provide-workers = ["worker"]
-# If you have more than one worker set this to run taskset only once
+# If you have more than one worker, set this to run the taskset only once
 workers = ["worker"]
 ```
 See `provided-workers` in [taskset](#Taskset).
 
-Example of running a taskset from the file `./LM-ts.toml` with ranaming a
+Example of running a taskset from the file `./LM-ts.toml` with renaming a
 `main-worker` to a `taskset-worker`:
 ```toml
 [taskset.setup]
@@ -368,25 +371,25 @@ run-taskline.worker.map = [
     ["main-worker", "taskset-worker"]
 ]
 provide-workers = ["main-worker"]
-# If you have more than one worker set this to run taskset only once
+# If you have more than one worker, set this to run the taskset only once
 workers = ["main-worker"]
 ```
 See `provided-workers` in [taskset](#Taskset).
 
 ### RunTaskset task worker
-It describes workers passed to the the `run-taskset` task. Variants:
+It describes workers passed to the `run-taskset` task. Variants:
 * `all` - Pass all workers;
 * `names` - Pass workers with names in `names`;
-* `map` - Pass renamed accordig to the `map` workers;
+* `map` - Pass renamed according to the `map` workers.
 
 ## Shell task
 Consists of a `command` string with a shell command and
 [common command parameters](#Common-command-parameters).
 
-**Return:** output of running command. Controll output processing by
+**Return:** Output of running command. Control output processing by
 [command parameters result](#Command-parameters-result).
 
-Example of running echo command:
+Example of running an echo command:
 ```toml
 shell.command = "echo LiL"
 shell.stdout.print = true
@@ -407,18 +410,22 @@ special.restart = {}
 ```
 
 ## Test task
-Run commands. Fails on first failure command run with check. List of fields:
+Run commands. Fails on the first failure command run with check. List of fields:
 * `commands` - Contains an array of args or shell commands;
-* `check` - Uses to overwrite default check value for commands.
-Example of running two commands and printing theirs output:
+* `check` - Used to overwrite the default check value for commands.
+
+**Return:** A boolean value that is true if all tests complete successfully.
+
+Example of running two commands and printing their output:
 ```toml
 test.commands = [
     { cmd = "echo lil", stdout = { print = true } },
     { cmd = "echo lal >&2", stderr = { print = true } },
 ]
 ```
-Example of running several success of failure commands with check disabled by
-default:
+
+Example of running several success or failure commands with check disabled
+by default:
 ```toml
 test.check = false
 test.commands = [
@@ -431,12 +438,13 @@ test.commands = [
 ```
 
 ## Warn task
-It shows message from a `msg` parameter with a log warn. Returns a previous
-result by default, otherwise result could be set via a `result` parameter.
+It shows a message from the `msg` parameter with a log warn. Returns the
+previous result by default, otherwise, the result could be set via the `result`
+parameter.
 
 **Return:** `result`.
 
-Example of greeting worker:
+Example of greeting the worker:
 ```toml
 warn.msg = "Hello {{ worker }}!"
 ```
@@ -463,24 +471,28 @@ Configure returned result. It has several fields:
 Controls the redirection of the command output. Fields:
 * `log` - Log output with a provided level;
 * `print` - Print output to stdout.
-For example, print stdout and log with `trace` level;
+
+For example, print stdout and log with `trace` level:
 ```toml
 shell.command = "echo LiL"
 shell.stdout = { print = true, log = "trace" }
 ```
 
 ### Matches
-It is a formula consisting of `and`, `or` and `err-re`, `out-re`, `any-re`.
-For example, `failure-matches` in a `shell` task;
+It is a formula consisting of `and`, `or`, and `err-re`, `out-re`, `any-re`.
+
+For example, `failure-matches` in a `shell` task:
 ```toml
 shell.command = "ls LLM.toml"
-shell.failure-matches = { or = [ { err-re = "LLM" }, { err-re = "toml" }]}
+shell.failure-matches = { or = [ { err-re = "LLM" }, { err-re = "toml" } ] }
 ```
 
 ## Task vars
 It is a table as in [vars](#Vars) or a list of tables as in
-[extend vars](#Extend-vars). Example of creating a shell task in a taskline
-and setting a variable `target` and a `path` variable, which uses `target`:
+[extend vars](#Extend-vars).
+
+Example of creating a shell task in a taskline and setting a variable `target`
+and a `path` variable, which uses `target`:
 ```toml
 [[taskline]]
 shell.cmd = "ls -l {{ path }}"
@@ -494,23 +506,23 @@ vars = [
 # Engine
 Most engines have base fields:
 * `name` - Set name for container or vm (default is worker's name);
-* `setup` - Switch turning on or off setting engine up;
-* `exists` - Set action performed then engine exists, variants are
-    `fail`, `ignore` and `replace`.
+* `setup` - Switch turning on or off setting the engine up;
+* `exists` - Set action performed when the engine exists, variants are
+    `fail`, `ignore`, and `replace`.
 
 There are several types of engines:
 * [dbg](#Dbg-engine);
 * [docker](#Docker-engine);
 * [incus](#Incus-engine);
 * [host](#Host-engine);
-* [podman](#Podman-engine).
+* [podman](#Podman-engine);
 * [ssh](#Ssh-engine);
 * [vml](#Vml-engine).
 
 
 ## Dbg engine
-Engine used to debug tasks. Just print information about running tasks.
-Could be setting any keys, all are ignored.
+Engine used to debug tasks. Just print information about running tasks. Could
+be setting any keys, all are ignored.
 
 Example of debugging `vm` worker with `vml` keys:
 ```toml
@@ -523,7 +535,7 @@ mem = "4G"
 
 ## Docker engine
 Container engine using docker.
-Docker specific options are:
+Docker-specific options are:
 * `load` - Path to saved image tarball to load;
 * `memory` - Amount of memory;
 * `image` - Image;
@@ -539,14 +551,14 @@ image = "alt"
 
 ## Incus engine
 Container engine using incus.
-Incus specific options are:
+Incus-specific options are:
 * `image` - Image;
 * `net` - Describe network;
-* `nproc` - Number of processessors;
+* `nproc` - Number of processors;
 * `memory` - Amount of memory;
 * `user` - User.
 
-Example of a docker worker with name `docker` and `alt` image:
+Example of an incus worker with name `incus` and `alt/Sisyphus` image:
 ```toml
 [workers.incus.engine.incus]
 image = "alt/Sisyphus"
@@ -555,6 +567,7 @@ image = "alt/Sisyphus"
 
 ## Host engine
 Basic engine running commands just on your host.
+
 Example of host worker with name `host`:
 ```toml
 [workers.host]
@@ -564,7 +577,7 @@ engine = "host"
 
 ## Podman engine
 Container engine using podman.
-Podman specific options are:
+Podman-specific options are:
 * `load` - Path to saved image tarball to load;
 * `memory` - Amount of memory;
 * `image` - Image;
@@ -580,15 +593,15 @@ image = "alt"
 
 
 ## Ssh engine
-Container engine using podman.
-Ssh specific options are:
-* `host` - Ssh host;
-* `port` - Ssh port;
-* `user` - Ssh user;
-* `key` - Ssh key;
-* `ssh-cmd` - Ssh command (default to `["ssh"]`).
+Ssh engine for remote execution.
+Ssh-specific options are:
+* `host` - ssh host;
+* `port` - ssh port;
+* `user` - ssh user;
+* `key` - ssh key;
+* `ssh-cmd` - ssh command (default to `["ssh"]`).
 
-Example of a podman worker with name `localhost`:
+Example of an ssh worker with name `localhost`:
 ```toml
 [workers.localhost.engine.ssh]
 host = "127.0.0.1"
@@ -597,16 +610,16 @@ host = "127.0.0.1"
 
 ## Vml engine
 Virtual machine engine using vml.
-Vml specific options are:
+Vml-specific options are:
 * `vml-bin` - Path to vml binary;
 * `memory` - Amount of memory;
 * `image` - Image;
 * `net` - Describe network;
-* `nproc` - Number of processessors;
+* `nproc` - Number of processors;
 * `parent` - Create vm with specific parent;
 * `user` - User.
 
-Example of vml a worker with name `vm`, `alt` image and 2 gigabytes of memory:
+Example of a vml worker with name `vm`, `alt` image, and 2 gigabytes of memory:
 ```toml
 [workers.vm]
 [workers.vm.engine.vml]
@@ -619,30 +632,31 @@ mem = "2G"
 Items are used to multiply [workers](#Worker-items) or [tasks](#Task-items).
 It sets a [template](templates.md) variable `item`, which can be used in
 strings as `{{ item }}`. Items could be one of four forms:
-1. Array of strings or integers
-```toml
-items = ["a", 2]
-```
-2. Sequence defined by `end`, `start` and `step`
-```toml
-items = { start = 1, end = 6, step = 2 }
-```
-3. Elements of a json array or keys of a json object
-```toml
-items.json = "{{ ['a', 'b'] | json }}"
-```
-4. Elements of an array variable or keys of an object variable with given name
-```toml
-items.var = "commands"
-```
-5. Shell command, run on host, which stdout splitted by newlines
-```toml
-items = { command = "ls -d /lib*" }
-```
+1. Array of strings or integers:
+   ```toml
+   items = ["a", 2]
+   ```
+2. Sequence defined by `end`, `start`, and `step`:
+   ```toml
+   items = { start = 1, end = 6, step = 2 }
+   ```
+3. Elements of a JSON array or keys of a JSON object:
+   ```toml
+   items.json = "{{ ['a', 'b'] | json }}"
+   ```
+4. Elements of an array variable or keys of an object variable with a given name:
+   ```toml
+   items.var = "commands"
+   ```
+5. Shell command, run on the host, which stdout is split by newlines:
+   ```toml
+   items = { command = "ls -d /lib*" }
+   ```
 
 ## Worker items
-Then used with workers, the item could be used in worker's name. Example of
-creating to podman workers `buildbot-master` and `buildbot-worker`:
+When used with workers, the item could be used in the worker's name. Example of
+creating two podman workers `buildbot-master` and `buildbot-worker`:
+
 ```toml
 [workers."buildbot-{{item}}"]
 items = ["master", "worker"]
@@ -652,7 +666,7 @@ pod = "lineup-bb"
 ```
 
 ## Task items
-In tasks items does not render in the task name. Instead, it creates several
+In tasks, items do not render in the task name. Instead, it creates several
 tasks with the same name. It is a sort of loop task. By default, tasks run in
 parallel.
 ```toml
@@ -670,8 +684,9 @@ Consists of:
 
 ## Extend vars
 Field `maps` gets a list of tables containing variables. Every element of the
-list can use previous variables in templates. Example of setting a variable
-`target` and a `path` variable, which uses `target`:
+list can use previous variables in templates.
+
+Example of setting a variable `target` and a `path` variable, which uses `target`:
 ```toml
 [extend]
 vars.maps = [
