@@ -206,6 +206,15 @@ pub struct Var {
 }
 
 impl Var {
+    pub fn from_name<S: AsRef<str>>(name: S) -> Self {
+        Self {
+            name: name.as_ref().to_string(),
+            types: Default::default(),
+            kind: Default::default(),
+            kind_args: Default::default(),
+        }
+    }
+
     fn parse_kind_args<S: AsRef<str>>(kind_args: S) -> StdResult<BTreeMap<String, String>, Error> {
         let mut args = BTreeMap::new();
         static RE: Lazy<Regex> = Lazy::new(|| Regex::new(r",\s*").unwrap());
@@ -389,6 +398,23 @@ impl TryFrom<BTreeMap<String, Value>> for Vars {
         }
 
         Ok(Vars(map))
+    }
+}
+
+impl From<Context> for Vars {
+    fn from(context: Context) -> Self {
+        let mut map = BTreeMap::new();
+        let context = match context.into_json() {
+            Value::Object(o) => o,
+            _ => panic!("Context into_json is not object"),
+        };
+
+        for (name, value) in context {
+            let var = Var::from_name(name);
+            map.insert(var, value);
+        }
+
+        Vars(map)
     }
 }
 

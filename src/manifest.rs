@@ -330,6 +330,8 @@ pub struct TasksetElem {
     pub requires: BTreeSet<String>,
     #[serde(default = "default_taskset_elem_workers")]
     pub workers: Vec<String>,
+    #[serde(default)]
+    pub provide_workers: Vec<String>,
     #[serde(flatten)]
     pub task: Task,
 }
@@ -357,6 +359,7 @@ fn default_taskset() -> Taskset {
     let taskset_elem = TasksetElem {
         requires: Default::default(),
         workers: default_taskset_elem_workers(),
+        provide_workers: Default::default(),
         task,
     };
     BTreeMap::from([("Run taskline".to_owned(), taskset_elem)])

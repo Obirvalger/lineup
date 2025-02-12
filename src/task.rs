@@ -64,6 +64,7 @@ impl Task {
         context: &Context,
         dir: &Path,
         tasklines: &Tasklines,
+        workers: &[Worker],
         worker: &Worker,
     ) -> Result<TaskResult> {
         let context = if self.clean_vars { Context::default() } else { context.to_owned() };
@@ -121,21 +122,24 @@ impl Task {
                             if self.items_table.is_some() {
                                 info!(
                                     "Run task `{}` (item={}) on worker `{}`",
-                                    name, &item, &worker.name
+                                    name,
+                                    &item,
+                                    worker.name()
                                 );
                             } else if self.table.is_some() {
                                 info!(
                                     "Run task `{}` (row={}) on worker `{}`",
                                     name,
                                     serde_json::to_string(&row)?,
-                                    &worker.name
+                                    worker.name()
                                 );
                             } else {
-                                info!("Run task `{}` on worker `{}`", name, &worker.name);
+                                info!("Run task `{}` on worker `{}`", name, worker.name());
                             };
                         }
 
-                        let mut res = self.task_type.run(&context, dir, tasklines, worker);
+                        let mut res =
+                            self.task_type.run(&context, dir, tasklines, workers, worker);
                         if self.items_table.is_some() {
                             res = res.with_context(|| format!("item: `{}`", item));
                         }

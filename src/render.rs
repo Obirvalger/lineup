@@ -31,6 +31,12 @@ impl<R: Render> Render for Option<R> {
     }
 }
 
+impl<R1: Render, R2: Render> Render for (R1, R2) {
+    fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
+        Ok((self.0.render(context, place.as_ref())?, self.1.render(context, place.as_ref())?))
+    }
+}
+
 impl<R: Render> Render for Vec<R> {
     fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
         self.iter().map(|r| r.render(context, place.as_ref())).collect()

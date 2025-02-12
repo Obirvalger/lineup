@@ -137,6 +137,8 @@ impl Runner {
     pub fn from_manifest<S: AsRef<OsStr>>(manifest_path: S, context: &Context) -> Result<Self> {
         let manifest_path = Path::new(manifest_path.as_ref());
         let dir = manifest_path
+            .canonicalize()
+            .with_context(|| format!("Failed to find manifest `{}`", &manifest_path.display()))?
             .parent()
             .ok_or_else(|| Error::BadManifest(manifest_path.to_owned()))?
             .to_owned();
@@ -149,6 +151,7 @@ impl Runner {
 
         let place = "Runner::from_manifest";
         let mut context = context.to_owned();
+        context.insert("manifest_dir", &dir.to_string_lossy().to_string());
         let mut vars = Self::get_use_vars(&context, &dir, &manifest.use_.vars)?;
         let mut new_context = vars.context()?;
         new_context.extend(context);
@@ -183,6 +186,10 @@ impl Runner {
 
     pub fn add_extra_vars(&mut self, vars: Vars) {
         self.vars.extend(vars);
+    }
+
+    pub fn set_workers(&mut self, workers: &[Worker]) {
+        self.workers = Vec::from(workers);
     }
 
     pub fn skip_tasks(&mut self, tasks: &[String]) {
@@ -220,6 +227,7 @@ impl Runner {
         let mut context = Context::new();
         context.insert("result", &Value::Null);
         context.extend(self.vars.context()?);
+        context.insert("manifest_dir", &self.dir.to_string_lossy().to_string());
 
         let tasks_graph = self
             .taskset
@@ -245,11 +253,11 @@ impl Runner {
                     .workers
                     .par_iter_mut()
                     .filter_map(|worker| -> Option<Result<String>> {
-                        if workers_re_set.is_match(&worker.name) {
+                        if workers_re_set.is_match(&worker.name()) {
                             if let Err(error) = worker.ensure_setup(&self.worker_exists) {
                                 return Some(Err(error));
                             }
-                            Some(Ok(worker.name.to_string()))
+                            Some(Ok(worker.name()))
                         } else {
                             None
                         }
@@ -266,20 +274,33 @@ impl Runner {
 
                 let taskset_elem =
                     self.taskset.get(name).ok_or(Error::BadTaskInTaskset(name.to_string()))?;
+                let provide_workers = self
+                    .workers
+                    .iter()
+                    .filter(|w| taskset_elem.provide_workers.contains(&w.name()))
+                    .map(|w| w.to_owned())
+                    .collect::<Vec<_>>();
                 let task = &taskset_elem.task;
                 self.workers.par_iter().try_for_each(|worker| -> Result<()> {
                     if workers_by_task
                         .get(name)
                         .cloned()
                         .unwrap_or_default()
-                        .contains(&worker.name)
+                        .contains(&worker.name())
                     {
                         let mut context = context.to_owned();
-                        context.insert("worker", &worker.name);
+                        context.insert("worker", &worker.name());
                         let result = task
-                            .run(&Some(name), &context, &self.dir, &self.tasklines, worker)
+                            .run(
+                                &Some(name),
+                                &context,
+                                &self.dir,
+                                &self.tasklines,
+                                &provide_workers,
+                                worker,
+                            )
                             .with_context(|| {
-                                format!("taskset task: `{}`, worker: `{}`", name, &worker.name)
+                                format!("taskset task: `{}`, worker: `{}`", name, worker.name())
                             })?;
                         if let Some(exception) = result.as_exception() {
                             warn!("Got exception: {:?}", exception);

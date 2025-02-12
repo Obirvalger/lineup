@@ -172,6 +172,10 @@ Also tasks in a taskset could specify workers to run on using the
 `workers` array, which consists of regexes of worker names.
 By default, tasks run on all workers.
 
+Taskset task specify `provide-workers`. It is an array of workers that are
+available in this task and all task it runned. It is useful to
+[run taskset](#RunTaskset-task) tasks. By default it is `[]`.
+
 
 # Task
 Tasks are defined by a [task type](#Task-types) and have some parameters:
@@ -194,10 +198,11 @@ There are several types of tasks:
 * [ensure](#Ensure-task) - Ensure taskline could be run;
 * [error](#Error-task) - Raise an error;
 * [exec](#Exec-task) - Run a command from an args array;
-* [info](#Info-task) - Show message with log info;
 * [file](#File-task) - Copy a file to the worker;
 * [get](#Get-task) - Copy a file from the worker;
+* [info](#Info-task) - Show message with log info;
 * [run-taskline](#RunTaskline-task) - Run a taskline from the file;
+* [run-taskset](#RunTaskset-task) - Run a taskset from the file;
 * [run](#Run-task) - Run a taskline;
 * [shell](#Shell-task) - Run a command from a shell string;
 * [special](#Special-task) - Specific tasks supported by some engines;
@@ -334,6 +339,45 @@ Example of a task installing `apt-repo` with `apt-get`:
 run-taskline = { module = "apt-get", taskline = "install" }
 vars.packages = [ "apt-repo" ]
 ```
+
+## RunTaskset task
+Run a taskset from a file. Field:
+* `module` - Name of a [module](modules.md). Or path to the file containing
+    the taskline, if it starts with `/` or `.`, it is interpreted as a path;
+* `worker` - Describes [workers](#RunTaskset-task-worker) to run taskset on.
+
+**Return:** `null`.
+
+Example of running a taskset from the file `./LM-ts.toml`:
+```toml
+[taskset.setup]
+run-taskline.module = "./LM-ts.toml"
+run-taskline.worker = "all"
+provide-workers = ["worker"]
+# If you have more than one worker set this to run taskset only once
+workers = ["worker"]
+```
+See `provided-workers` in [taskset](#Taskset).
+
+Example of running a taskset from the file `./LM-ts.toml` with ranaming a
+`main-worker` to a `taskset-worker`:
+```toml
+[taskset.setup]
+run-taskline.module = "./LM-ts.toml"
+run-taskline.worker.map = [
+    ["main-worker", "taskset-worker"]
+]
+provide-workers = ["main-worker"]
+# If you have more than one worker set this to run taskset only once
+workers = ["main-worker"]
+```
+See `provided-workers` in [taskset](#Taskset).
+
+### RunTaskset task worker
+It describes workers passed to the the `run-taskset` task. Variants:
+* `all` - Pass all workers;
+* `names` - Pass workers with names in `names`;
+* `map` - Pass renamed accordig to the `map` workers;
 
 ## Shell task
 Consists of a `command` string with a shell command and

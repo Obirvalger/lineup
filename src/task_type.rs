@@ -20,7 +20,7 @@ use crate::task_result::TaskResult;
 use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::tmpdir::tmpfile;
-use crate::vars::Var;
+use crate::vars::{Var, Vars};
 use crate::worker::Worker;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -334,6 +334,22 @@ pub struct RunTasklineType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RunTasksetTypeWorker {
+    All,
+    Maps(Vec<(String, String)>),
+    Names(Vec<String>),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
+pub struct RunTasksetType {
+    module: PathBuf,
+    worker: RunTasksetTypeWorker,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 pub struct ShellType {
@@ -432,8 +448,9 @@ pub enum TaskType {
     File(FileType),
     Get(GetType),
     Info(InfoType),
-    RunTaskline(RunTasklineType),
     Run(String),
+    RunTaskline(RunTasklineType),
+    RunTaskset(RunTasksetType),
     Shell(ShellType),
     Special(SpecialType),
     Test(TestType),
@@ -446,6 +463,7 @@ impl TaskType {
         context: &Context,
         dir: &Path,
         tasklines: &Tasklines,
+        workers: &[Worker],
         worker: &Worker,
     ) -> Result<TaskResult> {
         let mut context = context.to_owned();
@@ -516,7 +534,7 @@ impl TaskType {
                 taskline: taskline.to_owned(),
                 module: Default::default(),
             })
-            .run(&context, dir, tasklines, worker),
+            .run(&context, dir, tasklines, workers, worker),
             Self::RunTaskline(RunTasklineType { taskline, module }) => {
                 let module = module.render(&context, "run-taskline file")?;
                 let taskline_name = taskline.render(&context, "run-taskline taskline")?;
@@ -571,7 +589,7 @@ impl TaskType {
                 {
                     let result = task
                         .task
-                        .run(&task.name, &context, &dir, &new_tasklines, worker)
+                        .run(&task.name, &context, &dir, &new_tasklines, workers, worker)
                         .with_context(|| {
                             format!("taskline: `{}`, number: `{}`", taskline_str, iter)
                         })?;
@@ -594,6 +612,41 @@ impl TaskType {
                 }
 
                 Ok(value.into())
+            }
+            Self::RunTaskset(RunTasksetType { module, worker }) => {
+                let module = module.render(&context, "run-taskline file")?;
+                let file = module::resolve(&module, dir);
+                let new_workers = match worker {
+                    RunTasksetTypeWorker::All => workers.to_owned(),
+                    RunTasksetTypeWorker::Maps(maps) => {
+                        let maps = maps.render(&context, "run-taskset maps")?;
+                        let mut new_workers = vec![];
+                        for worker in workers {
+                            for map in &maps {
+                                if map.0 == worker.name() {
+                                    let mut new_worker = worker.to_owned();
+                                    new_worker.rename(&map.1);
+                                    new_workers.push(new_worker);
+                                }
+                            }
+                        }
+                        new_workers
+                    }
+                    RunTasksetTypeWorker::Names(names) => {
+                        let names = names.render(&context, "run-taskset maps")?;
+                        workers
+                            .iter()
+                            .filter(|w| names.contains(&w.name()))
+                            .map(|w| w.to_owned())
+                            .collect()
+                    }
+                };
+
+                let mut runner = Runner::from_manifest(file, &context)?;
+                runner.add_extra_vars(Vars::from(context.to_owned()));
+                runner.set_workers(&new_workers);
+                runner.run()?;
+                Ok(Value::Null.into())
             }
             Self::Shell(shell) => shell.run(&context, worker).map(|ok| ok.into()),
             Self::Special(SpecialType { type_, ignore_unsupported }) => {

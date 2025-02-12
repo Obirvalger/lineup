@@ -15,7 +15,8 @@ use crate::template::Context;
 
 #[derive(Clone, Debug)]
 pub struct Worker {
-    pub name: String,
+    name: String,
+    name_outer: String,
     workdir: PathBuf,
     engine: Engine,
     setup: bool,
@@ -69,6 +70,7 @@ impl Worker {
                 }
 
                 let name = name.render(&context, "name in workers in manifest")?;
+                let name_outer = name.to_string();
                 for row in &worker.table_by_name.list(&context)? {
                     if let Some(table_name) = row.get("name") {
                         let table_name = table_name
@@ -85,11 +87,28 @@ impl Worker {
                     .or(default.engine.as_ref())
                     .ok_or_else(|| Error::NoEngine(name.to_string()))?;
                 let engine = Engine::from_manifest_engine(&context, engine, dir)?;
-                workers.insert(Worker { name, engine, setup: false, workdir: PathBuf::default() });
+                workers.insert(Worker {
+                    name,
+                    name_outer,
+                    engine,
+                    setup: false,
+                    workdir: PathBuf::default(),
+                });
             }
         }
 
         Ok(workers.into_iter().collect::<Vec<Self>>())
+    }
+
+    pub fn name(&self) -> String {
+        self.name_outer.to_string()
+    }
+
+    pub fn rename<S: AsRef<str>>(&mut self, new_name: S) -> String {
+        let old_name = self.name_outer.to_string();
+        self.name_outer = new_name.as_ref().to_string();
+
+        old_name
     }
 
     pub fn ensure_setup(&mut self, action: &Option<ExistsAction>) -> Result<()> {
