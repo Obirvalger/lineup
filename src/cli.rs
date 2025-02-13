@@ -15,6 +15,14 @@ pub enum Commands {
         #[arg(long, short, default_value = "LM.toml")]
         manifest: PathBuf,
     },
+    Init {
+        #[arg(long, short, default_value = "default")]
+        profile: String,
+        #[arg(long, short, default_value = "LM.toml")]
+        manifest: PathBuf,
+        #[arg(long, short, required = false)]
+        extra_vars: Vec<String>,
+    },
 }
 
 #[derive(Parser, Debug)]

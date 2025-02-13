@@ -23,3 +23,26 @@ stderr = { log = "Warn", print = false }
 backtrace = true
 context = true
 context-lines = 10
+
+
+# Init profiles
+[init.profiles.default]
+manifest = """\
+[workers.{{ engine }}-worker.engine.{{ engine }}]
+
+{% for cmd in commands %}
+[[tasklines.{{ task }}]]
+shell.cmd = "{{ cmd }}"
+shell.stdout.print = {{ print }}
+{% endfor %}
+
+[taskset.{{ task }}]
+run = "{{ task }}"
+"""
+render = true
+vars.engine = "host"
+vars.task = "test"
+vars.print = "true"
+vars.commands = [
+    "echo Hi!"
+]

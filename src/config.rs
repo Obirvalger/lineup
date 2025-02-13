@@ -1,15 +1,19 @@
+use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{LazyLock, OnceLock};
 
-use anyhow::{Context, Result};
+use anyhow::Context as AnyhowContext;
+use anyhow::Result;
 use log::LevelFilter;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::files::install_file;
 use crate::task_type::CmdOutput;
+use crate::vars::{Var, Vars};
 
 pub static CONFIG: LazyLock<Config> =
     LazyLock::new(|| CONFIG_INNER.get().expect("Config should be initialized").to_owned());
@@ -108,6 +112,57 @@ impl Default for Error {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
+pub struct InitProfile {
+    pub manifest: String,
+    pub render: bool,
+    #[serde(default)]
+    pub vars: Vars,
+}
+
+fn default_init_profiles() -> BTreeMap<String, InitProfile> {
+    let manifest = r#"[workers.{{ engine }}-worker.engine.{{ engine }}]
+
+{% for cmd in commands %}
+[[tasklines.{{ task }}]]
+shell.cmd = "{{ cmd }}"
+shell.stdout.print = {{ print }}
+{% endfor %}
+
+[taskset.{{ task }}]
+run = "{{ task }}"
+"#
+    .to_string();
+
+    let mut vars = Vars::new();
+    vars.insert(Var::from_name("engine"), Value::String("host".to_string()));
+    vars.insert(Var::from_name("task"), Value::String("test".to_string()));
+    vars.insert(Var::from_name("print"), Value::String("true".to_string()));
+    vars.insert(
+        Var::from_name("commands"),
+        Value::Array(vec![Value::String("echo Hi!".to_string())]),
+    );
+    let profile = InitProfile { manifest, render: true, vars };
+
+    BTreeMap::from([("default".to_string(), profile)])
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
+pub struct Init {
+    #[serde(default = "default_init_profiles")]
+    pub profiles: BTreeMap<String, InitProfile>,
+}
+
+impl Default for Init {
+    fn default() -> Self {
+        Self { profiles: default_init_profiles() }
+    }
+}
+
 fn default_install_embedded_modules() -> bool {
     true
 }
@@ -134,6 +189,8 @@ pub struct Config {
     pub task: Task,
     #[serde(default)]
     pub error: Error,
+    #[serde(default)]
+    pub init: Init,
 }
 
 fn expand_tilde(path: &Path) -> PathBuf {

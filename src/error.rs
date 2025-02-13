@@ -9,6 +9,8 @@ pub enum Error {
     BadExtraVar(String),
     #[error("fs var name should be alphanumeric, but get `{0}`")]
     BadFsVar(String),
+    #[error("failed to get init profile `{0}`")]
+    BadInitProfile(String),
     #[error("kind argument `{0}` does not have ':' to delimit name")]
     BadKindArg(String),
     #[error("kind argument `render` must be true or false, but get `{0}`")]
@@ -33,6 +35,8 @@ pub enum Error {
     EnsureAbsentVars(String, String),
     #[error("get task's src `{0}` has no filename")]
     GetSrcFilename(PathBuf),
+    #[error("trying to init manifest `{0}` that already exists")]
+    InitManifestExists(PathBuf),
     #[error("required argument `{0}` is not set")]
     NoArgument(String),
     #[error("no engine provided to worker `{0}`")]

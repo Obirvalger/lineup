@@ -24,6 +24,7 @@ mod error;
 mod exception;
 mod files;
 mod fs_var;
+mod init;
 mod items;
 mod manifest;
 mod matches;
@@ -78,6 +79,10 @@ fn inner_main() -> Result<()> {
             Commands::Clean { manifest } => {
                 let mut runner = Runner::from_manifest(manifest, &Default::default())?;
                 runner.clean()?;
+            }
+            Commands::Init { profile, manifest, extra_vars } => {
+                let extra_vars = parse_extra_vars(&extra_vars)?;
+                init::manifest(profile, &manifest, extra_vars.context()?)?
             }
         }
     } else {
