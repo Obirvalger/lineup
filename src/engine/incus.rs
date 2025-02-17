@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
@@ -6,7 +7,7 @@ use cmd_lib::{run_cmd, run_fun};
 use crate::cmd::Cmd;
 use crate::engine::{EngineBase, ExistsAction};
 use crate::manifest::EngineIncus as ManifestEngineIncus;
-use crate::manifest::EngineIncusNet;
+use crate::manifest::{EngineIncusNet, EngineIncusStorage};
 use crate::render::Render;
 use crate::template::Context;
 
@@ -16,6 +17,7 @@ pub struct EngineIncus {
     pub net: Option<EngineIncusNet>,
     pub nproc: Option<String>,
     pub image: String,
+    pub storages: BTreeMap<String, EngineIncusStorage>,
     pub user: Option<String>,
     pub exists: ExistsAction,
     pub base: EngineBase,
@@ -36,6 +38,7 @@ impl EngineIncus {
             net: manifest_engine_incus.net,
             nproc,
             image: manifest_engine_incus.image,
+            storages: manifest_engine_incus.storages,
             user: manifest_engine_incus.user,
             exists: manifest_engine_incus.exists,
             base: manifest_engine_incus.base,
@@ -48,38 +51,13 @@ impl EngineIncus {
         let image = self.image.to_string();
         let name = self.n(name);
 
-        let mut options = vec!["-q".to_string()];
-
-        if let Some(memory) = &self.memory {
-            options.push("-c".to_string());
-            options.push(format!("limits.memory={}", memory));
-        }
-        if let Some(nproc) = &self.nproc {
-            options.push("-c".to_string());
-            options.push(format!("limits.cpu={}", nproc));
-        }
-
-        if let Some(net) = &self.net {
-            if let Some(network) = &net.network {
-                options.push("--network".to_string());
-                options.push(network.to_string());
-            }
-
-            if let Some(address) = &net.address {
-                options.push("--device".to_string());
-                options.push(format!("{},ipv4.address={}", &net.device, address));
-            }
-        }
-
-        options.push(name.to_string());
-
         let action = if let Some(action) = action { action } else { &self.exists };
         match action {
             ExistsAction::Fail => (),
             ExistsAction::Ignore => {
                 let exists = run_fun!($incus ls -f json name=$name)?;
                 if exists != "[]" {
-                    let stopped = run_fun!($incus ls status=stopped -f json $name)?;
+                    let stopped = run_fun!($incus ls -f json status=stopped name=$name)?;
                     if stopped != "[]" {
                         run_fun!($incus start $name)?;
                     }
@@ -87,11 +65,49 @@ impl EngineIncus {
                 }
             }
             ExistsAction::Replace => {
-                run_fun!($incus delete -qf $name)?;
+                let exists = run_fun!($incus ls -f json name=$name)?;
+                if exists != "[]" {
+                    run_fun!($incus delete -qf $name)?;
+                }
             }
         }
 
-        run_fun!($incus launch images:$image $[options])?;
+        run_fun!($incus init -q images:$image $name)?;
+
+        if let Some(memory) = &self.memory {
+            run_fun!(incus config set $name limits.memory=$memory)?;
+        }
+        if let Some(nproc) = &self.nproc {
+            run_fun!(incus config set $name limits.cpu=$nproc)?;
+        }
+
+        if let Some(net) = &self.net {
+            let device = &net.device;
+
+            if let Some(network) = &net.network {
+                run_fun!($incus network attach $network $name $device $device)?;
+            }
+
+            if let Some(address) = &net.address {
+                run_fun!($incus config device set $name $device ipv4.address=$address)?;
+            }
+        }
+
+        for (volume, storage) in &self.storages {
+            let path = &storage.path;
+            let pool = &storage.pool;
+
+            let mut options = vec![];
+            options.push(format!("pool={pool}"));
+            options.push(format!("source={volume}"));
+            if storage.readonly {
+                options.push("readonly=true".to_string());
+            }
+
+            run_fun!($incus config device add -q $name $volume disk path=$path $[options])?;
+        }
+
+        run_fun!($incus start $name)?;
         Ok(())
     }
 
@@ -108,7 +124,7 @@ impl EngineIncus {
         let incus = self.incus_bin.to_string();
         let name = self.n(name);
 
-        let exists = run_fun!($incus ls -f json $name)?;
+        let exists = run_fun!($incus ls -f json name=$name)?;
         if exists != "[]" {
             run_fun!($incus rm -qf $name)?;
         }

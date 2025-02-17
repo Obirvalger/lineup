@@ -3,6 +3,7 @@ Lineup manifest consists of several sections, most of which are optional.
 * [use](#Use) - Use items from other files;
 * [vars](#Vars) - Set global variables;
 * [networks](#Networks) - Define networks;
+* [storages](#Storages) - Define storages;
 * [workers](#Workers) - Define workers;
 * [default](#Default) - Overwrite defaults;
 * [tasklines](#Tasklines) - Define tasklines;
@@ -107,7 +108,7 @@ There is a list of special variables set by lineup:
 # Networks
 Networks describe virtual networks for workers. It is a table with network
 names as keys. Values are network structs. The struct is represented via a
-table. Keys are:
+table. Values are:
 * [engine](#Network-engine) - Specify parameters of a concrete engine (e.g., incus);
 
 ## Network engine
@@ -124,6 +125,27 @@ Example of creating an incus network `lpt`:
 ```toml
 [networks.lpt.engine.incus]
 address = "192.168.30.1/24"
+```
+
+
+# Storages
+Storages describe storage volumes for workers. It is a table with volume
+names as keys. Values are storage structs. The struct is represented via a
+table. Values are:
+* [engine](#Storage-engine) - Specify parameters of a concrete engine (e.g., incus);
+
+## Storage engine
+There is one engine type:
+* [incus](#Storage-engine-incus);
+
+### Storage engine incus
+Storage for container engine incus.
+Incus-specific options are:
+* `pool` - Pool for storage creation;
+
+Example of creating an incus storage `people` in the default pool:
+```toml
+[storages.people.engine.incus]
 ```
 
 
@@ -556,12 +578,30 @@ Incus-specific options are:
 * `net` - Describe network;
 * `nproc` - Number of processors;
 * `memory` - Amount of memory;
+* `storages` - Table with volume names as keys and
+    [storage](#Incus-engine-storage) values;
 * `user` - User.
 
 Example of an incus worker with name `incus` and `alt/Sisyphus` image:
 ```toml
 [workers.incus.engine.incus]
 image = "alt/Sisyphus"
+```
+
+### Incus engine storage
+Storage options are:
+* `pool` - Pool for storage creation;
+* `path` - Path within the container where the volume will be mounted;
+* `readonly` - Bool value specifying whether the storage should be used in
+    readonly mode.
+
+Example of an incus worker with name `gyle` and `alt/Sisyphus` image with the
+`people` storage in the default pool used in a readonly mode:
+```toml
+[workers.gyle.engine.incus]
+image = "alt/Sisyphus"
+storages.people.path = "/people"
+storages.people.readonly = true
 ```
 
 

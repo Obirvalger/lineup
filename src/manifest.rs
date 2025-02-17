@@ -18,6 +18,7 @@ use crate::use_unit::UseUnit;
 use crate::vars::{Maps, Vars};
 
 pub type Networks = BTreeMap<String, Network>;
+pub type Storages = BTreeMap<String, Storage>;
 pub type Workers = BTreeMap<String, Worker>;
 pub type Tasklines = BTreeMap<String, Taskline>;
 pub type Taskset = BTreeMap<String, TasksetElem>;
@@ -79,6 +80,39 @@ pub enum NetworkEngine {
 #[serde(deny_unknown_fields)]
 pub struct Network {
     pub engine: NetworkEngine,
+}
+
+fn default_storage_engine_pool() -> String {
+    "default".to_string()
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
+pub struct StorageEngineIncus {
+    #[serde(default = "default_storage_engine_pool")]
+    pub pool: String,
+}
+
+impl Render for StorageEngineIncus {
+    fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
+        let place = format!("incus storage engine in {}", place.as_ref());
+        let pool = self.pool.render(context, format!("pool in {}", place))?;
+        Ok(Self { pool })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum StorageEngine {
+    Incus(StorageEngineIncus),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
+pub struct Storage {
+    pub engine: StorageEngine,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -234,6 +268,30 @@ impl Render for EngineIncusNet {
         Ok(Self { address, device, network })
     }
 }
+
+fn default_engine_incus_storage_readonly() -> bool {
+    false
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
+pub struct EngineIncusStorage {
+    pub path: PathBuf,
+    #[serde(default = "default_storage_engine_pool")]
+    pub pool: String,
+    #[serde(default = "default_engine_incus_storage_readonly")]
+    pub readonly: bool,
+}
+
+impl Render for EngineIncusStorage {
+    fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
+        let pool = self.pool.render(context, format!("pool in {}", place.as_ref()))?;
+        let path = self.path.render(context, format!("path in {}", place.as_ref()))?;
+        Ok(Self { pool, path, readonly: self.readonly })
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 #[serde(deny_unknown_fields)]
@@ -243,6 +301,8 @@ pub struct EngineIncus {
     pub net: Option<EngineIncusNet>,
     pub nproc: Option<StringOrInt>,
     pub image: String,
+    #[serde(default)]
+    pub storages: BTreeMap<String, EngineIncusStorage>,
     pub user: Option<String>,
     #[serde(default)]
     pub exists: ExistsAction,
@@ -392,6 +452,8 @@ pub struct Manifest {
     pub default: Defaults,
     #[serde(default)]
     pub networks: Networks,
+    #[serde(default)]
+    pub storages: Storages,
     #[serde(default)]
     pub workers: Workers,
     #[serde(default = "default_taskset")]

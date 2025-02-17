@@ -32,6 +32,7 @@ mod module;
 mod network;
 mod render;
 mod runner;
+mod storage;
 mod string_or_int;
 mod table;
 mod task;

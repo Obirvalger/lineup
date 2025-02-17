@@ -17,6 +17,7 @@ use crate::manifest::{Manifest, Tasklines, Taskset};
 use crate::module;
 use crate::network::Network;
 use crate::render::Render;
+use crate::storage::Storage;
 use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::tsort::tsort;
@@ -44,6 +45,7 @@ pub struct Runner {
     pub tasklines: Tasklines,
     pub vars: Vars,
     pub networks: Vec<Network>,
+    pub storages: Vec<Storage>,
     pub workers: Vec<Worker>,
     pub dir: PathBuf,
     worker_exists: Option<ExistsAction>,
@@ -175,13 +177,24 @@ impl Runner {
         tasklines.extend(manifest_tasklines);
 
         let networks = Network::from_manifest_networks(&manifest.networks, &context)?;
+        let storages = Storage::from_manifest_storages(&manifest.storages, &context)?;
 
         let workers =
             Worker::from_manifest_workers(&manifest.workers, &defaults.worker, &context, &dir)?;
         let worker_exists = None;
         let skip_tasks = vec![];
 
-        Ok(Self { dir, taskset, skip_tasks, tasklines, vars, networks, workers, worker_exists })
+        Ok(Self {
+            dir,
+            taskset,
+            skip_tasks,
+            tasklines,
+            vars,
+            networks,
+            storages,
+            workers,
+            worker_exists,
+        })
     }
 
     pub fn add_extra_vars(&mut self, vars: Vars) {
@@ -209,12 +222,24 @@ impl Runner {
             network.remove()?;
         }
 
+        for storage in &mut self.storages {
+            storage.remove()?;
+        }
+
         Ok(())
     }
 
     fn setup_networks(&self) -> Result<()> {
         for network in &self.networks {
             network.setup()?;
+        }
+
+        Ok(())
+    }
+
+    fn setup_storages(&self) -> Result<()> {
+        for storage in &self.storages {
+            storage.setup()?;
         }
 
         Ok(())
@@ -236,6 +261,7 @@ impl Runner {
             .collect::<BTreeMap<_, _>>();
 
         self.setup_networks()?;
+        self.setup_storages()?;
 
         let layers = tsort(&tasks_graph, "taskset requires")?;
         save_layers(&layers)?;
