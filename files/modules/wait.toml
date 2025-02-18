@@ -1,0 +1,41 @@
+[vars]
+command = "systemctl is-system-running --wait"
+count = 120
+sleep = 1
+
+
+[[tasklines._run-command]]
+shell.command = "{{ command }}"
+shell.check = false
+shell.stdout = { log = "off", print = false }
+shell.stderr = { log = "off", print = false }
+shell.result.return-code = true
+
+[[tasklines._run-command]]
+break.taskline = "_wait"
+if = "{{ result == 0 }}"
+
+[[tasklines._run-command]]
+shell.cmd = "sleep {{ sleep }}"
+
+
+[[tasklines._wait]]
+run = "_run-command"
+items.end = "{{ count }}"
+parallel = false
+vars.iter = "{{ item }}"
+
+[[tasklines._wait]]
+error.msg = "Wait failed"
+
+
+[[taskline]]
+name = "Wait"
+ensure.vars = [
+    "command: string",
+    "count: u64 | string",
+    "sleep: u64 | string",
+]
+
+[[taskline]]
+run = "_wait"
