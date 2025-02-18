@@ -4,6 +4,7 @@ use std::path::Path;
 use anyhow::Context as AnyhowContext;
 use anyhow::Result;
 use log::info;
+use rayon::iter::ParallelIterator;
 use rayon_cond::CondIterator;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -82,8 +83,8 @@ impl Task {
             .unwrap_or_else(|| "item".to_string());
 
         let name = name.as_ref().map(|n| n.as_ref().to_string());
-        let results = CondIterator::new(items, self.parallel)
-            .map(|item| -> Result<(String, TaskResult)> {
+        let results =
+            CondIterator::new(items, self.parallel).map(|item| -> Result<(String, TaskResult)> {
                 let table = self
                     .table
                     .as_ref()
@@ -154,12 +155,32 @@ impl Task {
                 };
 
                 Ok((item, result))
-            })
-            .collect::<Result<Vec<_>>>()?;
-        let result = if self.items_table.is_some() {
-            TaskResult::fold_pairs(&results)
-        } else {
-            results[0].1.to_owned()
+            });
+
+        let result = match results {
+            CondIterator::Serial(mut iterator) => {
+                if self.items_table.is_some() {
+                    let mut pairs = vec![];
+                    for result in iterator {
+                        let (item, result) = result?;
+                        if result.as_exception().is_some() {
+                            return Ok(result);
+                        }
+                        pairs.push((item, result));
+                    }
+                    TaskResult::fold_pairs(&pairs)
+                } else {
+                    iterator.next().expect("No one result of task without items")?.1
+                }
+            }
+            CondIterator::Parallel(iterator) => {
+                let results = iterator.collect::<Result<Vec<_>>>()?;
+                if self.items_table.is_some() {
+                    TaskResult::fold_pairs(&results)
+                } else {
+                    results[0].1.to_owned()
+                }
+            }
         };
 
         if let Some(fs_var_name) = &self.result_fs_var {
