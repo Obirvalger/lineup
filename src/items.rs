@@ -1,3 +1,4 @@
+use anyhow::Context as AnyhowContext;
 use anyhow::{bail, Result};
 use cmd_lib::run_fun;
 use serde::{Deserialize, Serialize};
@@ -8,22 +9,50 @@ use crate::render::Render;
 use crate::string_or_int::StringOrInt;
 use crate::template::Context;
 
-fn default_items_seq_start() -> usize {
-    0
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+enum StringOrUsize {
+    String(String),
+    Usize(usize),
 }
 
-fn default_items_seq_step() -> usize {
-    1
+impl StringOrUsize {
+    pub fn to_usize(&self, field: &str) -> Result<usize> {
+        match self {
+            StringOrUsize::Usize(u) => Ok(*u),
+            StringOrUsize::String(s) => {
+                let u = s.parse::<usize>().with_context(|| format!("field: {field}"))?;
+                Ok(u)
+            }
+        }
+    }
+}
+
+impl Render for StringOrUsize {
+    fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
+        match self {
+            StringOrUsize::Usize(_u) => Ok(self.to_owned()),
+            StringOrUsize::String(s) => Ok(StringOrUsize::String(s.render(context, place)?)),
+        }
+    }
+}
+
+fn default_items_seq_start() -> StringOrUsize {
+    StringOrUsize::Usize(0)
+}
+
+fn default_items_seq_step() -> StringOrUsize {
+    StringOrUsize::Usize(1)
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ItemsSeq {
     #[serde(default = "default_items_seq_start")]
-    pub start: usize,
-    pub end: usize,
+    start: StringOrUsize,
+    end: StringOrUsize,
     #[serde(default = "default_items_seq_step")]
-    pub step: usize,
+    step: StringOrUsize,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -63,10 +92,12 @@ impl Items {
             Items::Words(words) => {
                 words.iter().map(|w| w.to_string()).collect::<Vec<_>>().to_owned()
             }
-            Items::Seq(seq) => (seq.start..seq.end)
-                .step_by(seq.step)
-                .map(|i| i.to_string())
-                .collect::<Vec<String>>(),
+            Items::Seq(seq) => {
+                let start = seq.start.render(context, "list items start")?.to_usize("start")?;
+                let end = seq.end.render(context, "list items end")?.to_usize("end")?;
+                let step = seq.step.render(context, "list items step")?.to_usize("step")?;
+                (start..end).step_by(step).map(|i| i.to_string()).collect::<Vec<String>>()
+            }
             Items::Command(command) => {
                 let cmd = command.command.render(context, "list items command")?;
                 let out = run_fun!(sh -c $cmd)?;
