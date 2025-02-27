@@ -9,8 +9,3 @@ pub static TMPDIR: Lazy<PathBuf> = Lazy::new(|| {
     run_cmd! {mkdir $tmpdir/tmpfiles }.expect("can't create tmpdir/tmpfiles");
     tmpdir
 });
-
-pub fn tmpfile() -> PathBuf {
-    let tmpdir = &TMPDIR;
-    PathBuf::from(run_fun! {mktemp -p $tmpdir/tmpfiles}.expect("can't create tmpfile"))
-}

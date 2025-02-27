@@ -1,4 +1,3 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::Context as AnyhowContext;
@@ -14,12 +13,12 @@ use crate::exception::Exception;
 use crate::manifest::Tasklines;
 use crate::matches::Matches;
 use crate::module;
+use crate::quote::quote;
 use crate::render::Render;
 use crate::runner::Runner;
 use crate::task_result::TaskResult;
 use crate::taskline::Taskline;
 use crate::template::Context;
-use crate::tmpdir::tmpfile;
 use crate::vars::{Var, Vars};
 use crate::worker::Worker;
 
@@ -500,9 +499,15 @@ impl TaskType {
                         worker.copy(src.render(&context, "file task src")?, &dst)
                     }
                     FileTypeSource::Content(contents) => {
-                        let src = tmpfile();
-                        fs::write(&src, contents)?;
-                        worker.copy(src, &dst)
+                        let contents = contents.render(&context, "file task contents")?;
+                        let dst_quoted = quote(dst.to_string_lossy())?;
+                        let mut cmd_params = CmdParams::default();
+                        let cmd_output = CmdOutput { log: LevelFilter::Off, print: false };
+                        cmd_params.stderr = cmd_output.to_owned();
+                        cmd_params.stdout = cmd_output.to_owned();
+                        cmd_params.stdin = Some(contents);
+                        worker.shell(format!("cat > {dst_quoted}"), &cmd_params)?;
+                        Ok(())
                     }
                 }?;
 
