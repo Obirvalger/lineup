@@ -213,14 +213,12 @@ fn main() {
             .format_timestamp(None)
             .try_init();
 
-        if let Some(Error::User(msg, code)) = &err.downcast_ref::<Error>() {
-            if !msg.is_empty() {
-                error!("{}", msg);
-            }
-            std::process::exit(*code);
+        let mut exit_code = 1;
+        if let Some(Error::User(_msg, code)) = &err.downcast_ref::<Error>() {
+            exit_code = *code;
         }
 
         show_error(err);
-        std::process::exit(1);
+        std::process::exit(exit_code);
     });
 }
