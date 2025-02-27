@@ -30,6 +30,7 @@ mod manifest;
 mod matches;
 mod module;
 mod network;
+mod quote;
 mod render;
 mod runner;
 mod storage;

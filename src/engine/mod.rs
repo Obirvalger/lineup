@@ -1,11 +1,11 @@
 use std::path::Path;
 
 use anyhow::{bail, Result};
-use cmd_lib::run_fun;
 use log::debug;
 use serde::{Deserialize, Serialize};
 
 pub use crate::engine::base::EngineBase;
+use crate::quote::quote_args;
 
 use crate::cmd::{Cmd, CmdOut};
 use crate::config::CONFIG;
@@ -49,18 +49,6 @@ pub enum ExistsAction {
     #[default]
     Ignore,
     Replace,
-}
-
-fn quote_args<S: AsRef<str>>(args: &[S]) -> Result<String> {
-    let mut cmd = Vec::with_capacity(args.len());
-    for arg in args {
-        let arg = arg.as_ref();
-        let quoted = run_fun!(printf %q $arg)?;
-        cmd.push(quoted);
-    }
-    let command = cmd.join(" ");
-
-    Ok(command)
 }
 
 impl Engine {
