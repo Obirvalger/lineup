@@ -132,17 +132,16 @@ fn show_error_indent<K: AsRef<str>, V: AsRef<str>>(key: K, value: V) {
         .parse::<usize>()
         .unwrap_or(default_lines_number);
 
-    if lines.len() <= 1 {
+    let len = lines.len();
+    if len <= 1 {
         error!("{prefix}`{value}`");
     } else {
         error!("{prefix}```");
-        for (number, line) in lines.iter().enumerate() {
-            if number < lines_number {
-                error!("{indent}{line}");
-            } else {
-                error!("... (show only $LINEUP_CONTEXT_LINES [{lines_number}] lines)");
-                break;
-            }
+        if len >= lines_number {
+            error!("... (show only $LINEUP_CONTEXT_LINES [{lines_number}] lines)");
+        }
+        for line in lines[len.saturating_sub(lines_number)..].iter() {
+            error!("{indent}{line}");
         }
         error!("{indent}```");
     }
