@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::path::Path;
+use std::time::{Duration, Instant};
 
 use anyhow::Context as AnyhowContext;
 use anyhow::Result;
@@ -19,6 +20,15 @@ use crate::task_type::{CmdParams, TaskType};
 use crate::template::Context;
 use crate::vars::ExtVars;
 use crate::worker::Worker;
+
+fn show_duration(duration: Duration) -> String {
+    let ms = duration.as_millis();
+    if ms < 2000 {
+        format!("{} ms", ms)
+    } else {
+        format!("{} s", duration.as_secs())
+    }
+}
 
 fn default_task_items_table_items_var() -> String {
     "item".to_string()
@@ -139,8 +149,39 @@ impl Task {
                             };
                         }
 
+                        let start = Instant::now();
                         let mut res =
                             self.task_type.run(&context, dir, tasklines, workers, worker);
+                        let duration = start.elapsed();
+
+                        if let Some(name) = &name {
+                            let name = name.render(&context, "task name")?;
+                            if self.items_table.is_some() {
+                                info!(
+                                    "Task `{}` (item={}) on worker `{}` finished in {}",
+                                    name,
+                                    &item,
+                                    worker.name(),
+                                    show_duration(duration),
+                                );
+                            } else if self.table.is_some() {
+                                info!(
+                                    "Task `{}` (row={}) on worker `{}` finished in {}",
+                                    name,
+                                    serde_json::to_string(&row)?,
+                                    worker.name(),
+                                    show_duration(duration),
+                                );
+                            } else {
+                                info!(
+                                    "Task `{}` on worker `{}` finished in {}",
+                                    name,
+                                    worker.name(),
+                                    show_duration(duration),
+                                );
+                            };
+                        }
+
                         if self.items_table.is_some() {
                             res = res.with_context(|| format!("item: `{}`", item));
                         }
