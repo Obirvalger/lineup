@@ -300,7 +300,9 @@ exec.stdout.print = true
 A file task has several fields:
 * `dst` - Destination path on the worker to store the file;
 * `src` - Source path on the host to get the file;
-* `content` - String with contents of the file.
+* `content` - String with contents of the file;
+* `chown` - Change owner of the file (runs a `chown` utility);
+* `chmod` - Change permissions of the file (runs a `chmod` utility).
 
 **Return:** `dst`.
 

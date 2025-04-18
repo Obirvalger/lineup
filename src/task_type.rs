@@ -118,6 +118,8 @@ pub struct FileType {
     pub dst: PathBuf,
     #[serde(flatten)]
     pub source: FileTypeSource,
+    pub chown: Option<String>,
+    pub chmod: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -269,6 +271,17 @@ pub struct CmdParams {
     pub success_matches: Option<Matches>,
     #[serde(alias = "fm")]
     pub failure_matches: Option<Matches>,
+}
+
+impl CmdParams {
+    pub fn quiet() -> Self {
+        let mut cmd_params = CmdParams::default();
+        let cmd_output = CmdOutput { log: LevelFilter::Off, print: false };
+        cmd_params.stderr = cmd_output.to_owned();
+        cmd_params.stdout = cmd_output.to_owned();
+
+        cmd_params
+    }
 }
 
 impl Render for CmdParams {
@@ -492,7 +505,7 @@ impl TaskType {
                 bail!(Error::User(msg, *code));
             }
             Self::Exec(exec) => exec.run(&context, worker).map(|ok| ok.into()),
-            Self::File(FileType { dst, source }) => {
+            Self::File(FileType { dst, source, chown, chmod }) => {
                 let dst = dst.render(&context, "file task dst")?;
                 match source {
                     FileTypeSource::Src(src) => {
@@ -501,15 +514,26 @@ impl TaskType {
                     FileTypeSource::Content(contents) => {
                         let contents = contents.render(&context, "file task contents")?;
                         let dst_quoted = quote(dst.to_string_lossy())?;
-                        let mut cmd_params = CmdParams::default();
-                        let cmd_output = CmdOutput { log: LevelFilter::Off, print: false };
-                        cmd_params.stderr = cmd_output.to_owned();
-                        cmd_params.stdout = cmd_output.to_owned();
+                        let mut cmd_params = CmdParams::quiet();
                         cmd_params.stdin = Some(contents);
                         worker.shell(format!("cat > {dst_quoted}"), &cmd_params)?;
                         Ok(())
                     }
                 }?;
+
+                if let Some(chown) = chown {
+                    worker.exec(
+                        &["chown", "-R", chown, &dst.to_string_lossy()],
+                        &CmdParams::quiet(),
+                    )?;
+                }
+
+                if let Some(chmod) = chmod {
+                    worker.exec(
+                        &["chmod", "-R", chmod, &dst.to_string_lossy()],
+                        &CmdParams::quiet(),
+                    )?;
+                }
 
                 Ok(Value::String(dst.to_string_lossy().to_string()).into())
             }
