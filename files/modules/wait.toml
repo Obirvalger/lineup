@@ -12,11 +12,19 @@ shell.stderr = { log = "off", print = false }
 shell.result.return-code = true
 
 [[tasklines._run-command]]
+dummy = {}
+export-vars = ["rc"]
+vars.rc = "{{ result }}"
+
+[[tasklines._run-command]]
 break.taskline = "_wait"
 if = "{{ result == 0 }}"
 
 [[tasklines._run-command]]
 shell.cmd = "sleep {{ sleep }}"
+
+[[tasklines._run-command]]
+trace.msg = "Wait iter={{ iter }} rc={{ rc }} worker={{ worker }}"
 
 
 [[tasklines._wait]]
