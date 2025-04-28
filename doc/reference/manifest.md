@@ -206,6 +206,7 @@ Tasks are defined by a [task type](#Task-types) and have some parameters:
 * [items](#Items) - Multiplier to create several tasks;
 * `parallel` - A bool controlling whether to run items tasks in parallel;
 * [vars](#Task-vars) - Set variables;
+* `export-vars` - Array of variable names that should be passed through a taskile;
 * `clean-vars` - If true, run task without previously defined variables;
 * `table` - Table.
 

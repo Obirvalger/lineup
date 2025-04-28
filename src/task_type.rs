@@ -653,6 +653,9 @@ impl TaskType {
                         })?;
 
                     if let Some(v) = result.as_value() {
+                        if let Some(vars_context) = result.as_context() {
+                            context.extend(vars_context);
+                        }
                         value = v.to_owned();
                         context.insert("result", &value);
                     } else if let Some(exception) = result.as_exception() {

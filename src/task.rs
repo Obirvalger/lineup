@@ -62,6 +62,8 @@ pub struct Task {
     pub result_fs_var: Option<String>,
     #[serde(default)]
     pub vars: ExtVars,
+    #[serde(default)]
+    pub export_vars: Vec<String>,
     #[serde(flatten)]
     pub items_table: Option<TaskItemsTable>,
     #[serde(flatten)]
@@ -120,7 +122,8 @@ impl Task {
                         let mut context = context.to_owned();
                         context.insert("row", &row);
                         let task_vars = self.vars.render(&context, "task")?;
-                        context.extend(task_vars.vars()?.context()?);
+                        let vars_context = task_vars.vars()?.context()?;
+                        context.extend(vars_context.to_owned());
                         if let Some(condition) = &self.condition {
                             let condition = condition.render(&context, "task condition")?;
                             if worker.shell(condition, &CmdParams::default()).is_err() {
@@ -185,6 +188,13 @@ impl Task {
                         if self.items_table.is_some() {
                             res = res.with_context(|| format!("item: `{}`", item));
                         }
+                        let mut new_vars_context = Context::new();
+                        for name in &self.export_vars {
+                            if let Some(value) = &vars_context.get(name) {
+                                new_vars_context.insert(name.to_string(), value);
+                            }
+                        }
+                        let _ = res.as_mut().map(|r| r.add_vars(new_vars_context.into_json()));
                         res
                     })
                     .collect::<Result<Vec<_>, _>>()?;
@@ -209,7 +219,7 @@ impl Task {
                         }
                         pairs.push((item, result));
                     }
-                    TaskResult::fold_pairs(&pairs)
+                    TaskResult::fold_items(&pairs)
                 } else {
                     iterator.next().expect("No one result of task without items")?.1
                 }
@@ -217,7 +227,7 @@ impl Task {
             CondIterator::Parallel(iterator) => {
                 let results = iterator.collect::<Result<Vec<_>>>()?;
                 if self.items_table.is_some() {
-                    TaskResult::fold_pairs(&results)
+                    TaskResult::fold_items(&results)
                 } else {
                     results[0].1.to_owned()
                 }

@@ -414,6 +414,7 @@ fn default_taskset() -> Taskset {
         parallel: true,
         result_fs_var: None,
         vars: Default::default(),
+        export_vars: Default::default(),
         task_type,
     };
     let taskset_elem = TasksetElem {
