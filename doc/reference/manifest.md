@@ -216,6 +216,7 @@ If the `result` variable is not set, it has a `null` value.
 ## Task types
 There are several types of tasks:
 * [break](#Break-task) - Break execution of a taskline;
+* [debug](#Debug-task) - Show message with log debug;
 * [dummy](#Dummy-task) - Do nothing;
 * [ensure](#Ensure-task) - Ensure taskline could be run;
 * [error](#Error-task) - Raise an error;
@@ -229,6 +230,7 @@ There are several types of tasks:
 * [shell](#Shell-task) - Run a command from a shell string;
 * [special](#Special-task) - Specific tasks supported by some engines;
 * [test](#Test-task) - An array of commands;
+* [trace](#Trace-task) - Show message with log trace;
 * [warn](#Warn-task) - Show message with log warn.
 
 ## Break task
@@ -245,6 +247,18 @@ break = {}
 
 [[tasklines.break]]
 shell.cmd = "false"
+```
+
+## Debug task
+It shows a message from the `msg` parameter with a log debug. Returns the
+previous result by default, otherwise, the result could be set via the `result`
+parameter.
+
+**Return:** `result`.
+
+Example of greeting the worker:
+```toml
+debug.msg = "Hello {{ worker }}!"
 ```
 
 ## Dummy task
@@ -459,6 +473,18 @@ test.commands = [
     { args = ["true"] }, # exec task
     { cmd = "true", check = true }, # check only this command
 ]
+```
+
+## Trace task
+It shows a message from the `msg` parameter with a log trace. Returns the
+previous result by default, otherwise, the result could be set via the `result`
+parameter.
+
+**Return:** `result`.
+
+Example of greeting the worker:
+```toml
+trace.msg = "Hello {{ worker }}!"
 ```
 
 ## Warn task

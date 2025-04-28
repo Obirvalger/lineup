@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Context as AnyhowContext;
 use anyhow::{bail, Result};
-use log::{info, log, warn, LevelFilter};
+use log::{debug, info, log, trace, warn, LevelFilter};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -27,6 +27,15 @@ use crate::worker::Worker;
 pub struct BreakType {
     #[serde(default)]
     pub taskline: Option<String>,
+    #[serde(default)]
+    pub result: Option<Value>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+pub struct DebugType {
+    msg: String,
     #[serde(default)]
     pub result: Option<Value>,
 }
@@ -443,6 +452,15 @@ pub struct TestType {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
+pub struct TraceType {
+    msg: String,
+    #[serde(default)]
+    pub result: Option<Value>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
 pub struct WarnType {
     msg: String,
     #[serde(default)]
@@ -453,6 +471,7 @@ pub struct WarnType {
 #[serde(rename_all = "kebab-case")]
 pub enum TaskType {
     Break(BreakType),
+    Debug(DebugType),
     Dummy(DummyType),
     Ensure(EnsureType),
     Error(ErrorType),
@@ -466,6 +485,7 @@ pub enum TaskType {
     Shell(ShellType),
     Special(SpecialType),
     Test(TestType),
+    Trace(TraceType),
     Warn(WarnType),
 }
 
@@ -491,6 +511,15 @@ impl TaskType {
                     result,
                 }
                 .into())
+            }
+            Self::Debug(DebugType { msg, result }) => {
+                let msg = msg.render(&context, "debug msg")?;
+                debug!("{}", msg);
+                if let Some(result) = result {
+                    result.render(&context, "debug result").map(|ok| ok.into())
+                } else {
+                    Ok(context.get("result").cloned().unwrap_or(Value::Null).into())
+                }
             }
             Self::Dummy(dummy) => {
                 if let Some(result) = &dummy.result {
@@ -690,6 +719,15 @@ impl TaskType {
                 }
 
                 Ok(Value::Bool(success).into())
+            }
+            Self::Trace(TraceType { msg, result }) => {
+                let msg = msg.render(&context, "trace msg")?;
+                trace!("{}", msg);
+                if let Some(result) = result {
+                    result.render(&context, "trace result").map(|ok| ok.into())
+                } else {
+                    Ok(context.get("result").cloned().unwrap_or(Value::Null).into())
+                }
             }
             Self::Warn(WarnType { msg, result }) => {
                 let msg = msg.render(&context, "warn msg")?;
