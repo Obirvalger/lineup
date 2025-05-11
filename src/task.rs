@@ -126,7 +126,12 @@ impl Task {
                         context.extend(vars_context.to_owned());
                         if let Some(condition) = &self.condition {
                             let condition = condition.render(&context, "task condition")?;
-                            if worker.shell(condition, &CmdParams::default()).is_err() {
+                            let skip = match condition.trim() {
+                                "true" => false,
+                                "false" => true,
+                                _ => worker.shell(condition, &CmdParams::default()).is_err(),
+                            };
+                            if skip {
                                 let result = context.get("result").unwrap_or(&Value::Null);
                                 return Ok(result.to_owned().into());
                             }
