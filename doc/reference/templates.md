@@ -43,29 +43,28 @@ shell.command = "apt-get remove -y {{ packages | quote }}"
 ```
 
 ## Re match
-Substitute a value matched a regex from an argument `re` with a replacement
-from a `str` argument. Match literally to a fixed string in `re` if `fix`
-argument is true. If value is a string or number, return the value with a
-substitution. If value is an array, filter out from the array all strings that
-does not match.
-Example of showing worning if version does not match:
+Matches a value to a regex from an argument `re`. Matches literally to a fixed
+string in `re` if `fix` argument is true. If value is a string or number,
+return a bool (true is matched). If value is an array, filter out from the
+array all strings that does not match.
+
+Example of showing warning if version does not match:
 ```toml
-shell.command = "echo Wrong version"
-shell.stdout.print = true
+warn.msg = "Wrong version"
 if = "! {{ '1.2.3' | re_match(re='1.2.2', fix=true) }}"
 ```
 
 ## Re sub
-Matches a value to a regex from an argument `re`. Match literally to a fixed
-string in `re` if `fix` argument is true. Get substitution from a `str`
-argument (`$1` refers a first group). If value is a string or number, return
-bool. If value is an array, substitute every element. If an argument
-`mathces_only` is true, filter out from the array all strings that does not
-match.
+Substitute a value matched a regex from an argument `re` with a replacement
+from a `str` argument.  Matches literally to a fixed string in `re` if `fix`
+argument is true. Get substitution from a `str` argument (`$1` refers a first
+group). If value is a string or number, return the value with a substitution.
+If value is an array, substitute every element. If an argument `mathces_only`
+is true, filter out from the array all strings that does not match.
+
 Example of getting versions from an array:
 ```toml
-shell.command = "echo {{ versions | re_sub(re='.*?(\\d(\\.\\d)*).*', str='$1', matches_only=true) }}"
-shell.stdout.print = true
+info.msg = "{{ versions | re_sub(re='.*?(\\d(\\.\\d)*).*', str='$1', matches_only=true) }}"
 vars.versions = ['ver-1.2.3', 'stable', '2.2-alt1', 3]
 ```
 
