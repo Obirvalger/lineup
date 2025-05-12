@@ -232,25 +232,33 @@ impl Engine {
         params.stdout.show(&stdout);
         params.stderr.show(&stderr);
 
-        if params.check.unwrap_or(CONFIG.task.command.check) && !out.success() {
+        let check = params.check.unwrap_or(CONFIG.task.command.check);
+
+        if check && !out.success() {
             let error = Error::CommandFailedExitCode(command_in_error.as_ref().to_string());
             return Self::run_wrap_error(error, None, params, &out);
         }
 
         if let Some(matches) = &params.failure_matches {
             if matches.is_match(&stdout, &stderr)? {
-                let error =
-                    Error::CommandFailedFailureMatches(command_in_error.as_ref().to_string());
-                return Self::run_wrap_error(error, Some(matches), params, &out);
+                out.matched = true;
+                if check {
+                    let error =
+                        Error::CommandFailedFailureMatches(command_in_error.as_ref().to_string());
+                    return Self::run_wrap_error(error, Some(matches), params, &out);
+                }
             }
         }
 
         if let Some(matches) = &params.success_matches {
             if !matches.is_match(&stdout, &stderr)? {
-                let error =
-                    Error::CommandFailedSuccsessMatches(command_in_error.as_ref().to_string());
-
-                return Self::run_wrap_error(error, Some(matches), params, &out);
+                if check {
+                    let error =
+                        Error::CommandFailedSuccsessMatches(command_in_error.as_ref().to_string());
+                    return Self::run_wrap_error(error, Some(matches), params, &out);
+                }
+            } else {
+                out.matched = true
             }
         }
 

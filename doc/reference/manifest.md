@@ -514,6 +514,7 @@ Some common command parameters:
 ### Command parameters result
 Configure returned result. It has several fields:
 * `lines` - Split output stream to an array of lines or return a string;
+* `matched` - Return true if success-matches or failure-matches is matched;
 * `return-code` - Return just rc if true;
 * `stream` - Set stream `stdout`(by default) or `stderr`;
 * `strip` - Strip trailing whitespace symbols.

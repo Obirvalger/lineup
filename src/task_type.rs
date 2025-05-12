@@ -203,6 +203,8 @@ pub struct CmdParamsResult {
     #[serde(default = "default_cmd_params_result_lines")]
     lines: bool,
     #[serde(default)]
+    matched: bool,
+    #[serde(default)]
     #[serde(alias = "rc")]
     return_code: bool,
     #[serde(default)]
@@ -215,6 +217,10 @@ impl CmdParamsResult {
     fn get(&self, out: CmdOut) -> Value {
         if self.return_code {
             return out.rc().map(|c| c.into()).unwrap_or(Value::Null);
+        }
+
+        if self.matched {
+            return Value::Bool(out.matched);
         }
 
         let mut result = match self.stream {
@@ -239,6 +245,7 @@ impl Default for CmdParamsResult {
     fn default() -> Self {
         Self {
             lines: default_cmd_params_result_lines(),
+            matched: Default::default(),
             return_code: Default::default(),
             stream: Default::default(),
             strip: default_cmd_params_result_strip(),

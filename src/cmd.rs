@@ -90,12 +90,13 @@ impl Cmd {
 #[derive(Clone, Debug)]
 pub struct CmdOut {
     inner: Output,
+    pub matched: bool,
     success_codes: Vec<i32>,
 }
 
 impl CmdOut {
     pub fn new(output: Output) -> Self {
-        Self { inner: output, success_codes: vec![0] }
+        Self { inner: output, matched: false, success_codes: vec![0] }
     }
 
     pub fn success_codes(&mut self, success_codes: &[i32]) {
