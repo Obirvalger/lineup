@@ -101,6 +101,10 @@ fn default_error_code() -> i32 {
     1
 }
 
+fn default_error_trace() -> bool {
+    true
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
@@ -108,6 +112,8 @@ pub struct ErrorType {
     msg: String,
     #[serde(default = "default_error_code")]
     code: i32,
+    #[serde(default = "default_error_trace")]
+    trace: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -536,9 +542,9 @@ impl TaskType {
                 }
             }
             Self::Ensure(ensure) => ensure.ensure(&context).map(|ok| ok.into()),
-            Self::Error(ErrorType { msg, code }) => {
+            Self::Error(ErrorType { msg, code, trace }) => {
                 let msg = msg.render(&context, "error msg")?;
-                bail!(Error::User(msg, *code));
+                bail!(Error::User(msg, *code, *trace));
             }
             Self::Exec(exec) => exec.run(&context, worker).map(|ok| ok.into()),
             Self::File(FileType { dst, source, chown, chmod }) => {

@@ -288,14 +288,16 @@ ensure.vars = ["user", "vars.lil"]
 
 Raises an error with a message from the `msg` parameter. Exits the process with
 a `1` code by default, otherwise, the return code could be set via the `code`
-parameter.
+parameter. Showing backtrace could be disabled via `trace` boolean parameter.
 
 **Return:** `result`.
 
-Example of failing with a message `Number not found` and an exit code `3`:
+Example of failing with a message `Number not found`, an exit code `3` and
+witout backtrace:
 ```toml
 error.msg = "Number not found"
 error.code = 3
+error.trace = false
 ```
 
 ## Exec task

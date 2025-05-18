@@ -60,7 +60,7 @@ pub enum Error {
     #[error("cannot use vars `{0}` from the `{1}`")]
     UseVars(String, PathBuf),
     #[error("{0}")]
-    User(String, i32),
+    User(String, i32, bool),
     #[error("failed to setup worker `{0}`")]
     WorkerSetupFailed(String),
     #[error("argument `{0}` has wrong type")]

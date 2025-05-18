@@ -147,7 +147,7 @@ fn show_error_indent<K: AsRef<str>, V: AsRef<str>>(key: K, value: V) {
     }
 }
 
-fn show_error(err: AnyhowError) {
+fn show_error(err: AnyhowError, show_trace: bool) {
     let mut backtrace = vec![];
     let mut contexts = vec![];
     let mut errors = vec![];
@@ -195,7 +195,7 @@ fn show_error(err: AnyhowError) {
         }
     }
 
-    if config_initialized() && CONFIG.error.backtrace {
+    if show_trace && config_initialized() && CONFIG.error.backtrace {
         if !backtrace.is_empty() {
             error!("backtrace:");
         }
@@ -214,11 +214,13 @@ fn main() {
             .try_init();
 
         let mut exit_code = 1;
-        if let Some(Error::User(_msg, code)) = &err.downcast_ref::<Error>() {
+        let mut show_trace = true;
+        if let Some(Error::User(_msg, code, trace)) = &err.downcast_ref::<Error>() {
             exit_code = *code;
+            show_trace = *trace;
         }
 
-        show_error(err);
+        show_error(err, show_trace);
         std::process::exit(exit_code);
     });
 }
