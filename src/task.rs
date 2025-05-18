@@ -1,10 +1,12 @@
 use std::collections::BTreeMap;
+use std::num::NonZeroU32;
 use std::path::Path;
+use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::Context as AnyhowContext;
 use anyhow::Result;
-use log::info;
+use log::{info, warn};
 use rayon::iter::ParallelIterator;
 use rayon_cond::CondIterator;
 use serde::{Deserialize, Serialize};
@@ -44,6 +46,29 @@ pub struct TaskItemsTable {
     pub table_by_item: Option<Table>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+pub struct TaskTryCleanup {
+    task: TaskType,
+}
+
+fn default_task_try_sleep() -> Duration {
+    Duration::from_secs(1)
+}
+
+#[serde_with::serde_as]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+pub struct TaskTry {
+    attempts: NonZeroU32,
+    cleanup: Option<TaskTryCleanup>,
+    #[serde_as(as = "serde_with::DurationSecondsWithFrac<f64, serde_with::formats::Flexible>")]
+    #[serde(default = "default_task_try_sleep")]
+    sleep: Duration,
+}
+
 fn default_task_parallel() -> bool {
     true
 }
@@ -68,6 +93,8 @@ pub struct Task {
     pub items_table: Option<TaskItemsTable>,
     #[serde(flatten)]
     pub task_type: TaskType,
+    #[serde(rename = "try")]
+    pub try_: Option<TaskTry>,
 }
 
 impl Task {
@@ -158,33 +185,64 @@ impl Task {
                         }
 
                         let start = Instant::now();
+                        let mut attempts = "".to_string();
                         let mut res =
                             self.task_type.run(&context, dir, tasklines, workers, worker);
+                        if let Some(try_) = &self.try_ {
+                            let mut final_attempt = 1;
+                            for attempt in 1..=try_.attempts.get() {
+                                final_attempt = attempt;
+                                if res.is_err() {
+                                    thread::sleep(try_.sleep);
+                                    if let Some(cleanup) = &try_.cleanup {
+                                        if cleanup
+                                            .task
+                                            .run(&context, dir, tasklines, workers, worker)
+                                            .is_err()
+                                        {
+                                            warn!("Cleanup command failed");
+                                        }
+                                    }
+                                    res = self
+                                        .task_type
+                                        .run(&context, dir, tasklines, workers, worker);
+                                } else {
+                                    break;
+                                }
+                            }
+
+                            if final_attempt > 1 {
+                                attempts = format!("({} attempts)", final_attempt);
+                            }
+                        }
                         let duration = start.elapsed();
 
                         if let Some(name) = &name {
                             let name = name.render(&context, "task name")?;
                             if self.items_table.is_some() {
                                 info!(
-                                    "Task `{}` (item={}) on worker `{}` finished in {}",
+                                    "Task `{}` (item={}) on worker `{}` finished{} in {}",
                                     name,
                                     &item,
                                     worker.name(),
+                                    attempts,
                                     show_duration(duration),
                                 );
                             } else if self.table.is_some() {
                                 info!(
-                                    "Task `{}` (row={}) on worker `{}` finished in {}",
+                                    "Task `{}` (row={}) on worker `{}` finished{} in {}",
                                     name,
                                     serde_json::to_string(&row)?,
                                     worker.name(),
+                                    attempts,
                                     show_duration(duration),
                                 );
                             } else {
                                 info!(
-                                    "Task `{}` on worker `{}` finished in {}",
+                                    "Task `{}` on worker `{}` finished{} in {}",
                                     name,
                                     worker.name(),
+                                    attempts,
                                     show_duration(duration),
                                 );
                             };

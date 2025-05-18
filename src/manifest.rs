@@ -416,6 +416,7 @@ fn default_taskset() -> Taskset {
         vars: Default::default(),
         export_vars: Default::default(),
         task_type,
+        try_: None,
     };
     let taskset_elem = TasksetElem {
         requires: Default::default(),

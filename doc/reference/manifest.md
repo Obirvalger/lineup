@@ -208,6 +208,7 @@ Tasks are defined by a [task type](#Task-types) and have some parameters:
 * [vars](#Task-vars) - Set variables;
 * `export-vars` - Array of variable names that should be passed through a taskile;
 * `clean-vars` - If true, run task without previously defined variables;
+* [try](#Task-try) - Try running the task several attempts if fails;
 * `table` - Table.
 
 ## Task result
@@ -554,6 +555,22 @@ vars = [
     { target = "debug" },
     { path = "target/{{ target }}/lineup" },
 ]
+```
+
+## Task try
+Run the task until it finishes successfully or runs out of attempts.
+Parameters:
+* `attempts` - Number of attemps to run task;
+* `sleep` - Sleep some seconds after fail (`1` by default);
+* `cleanup.task` - Task runngin after fail to cleanup.
+
+Example of running `possibly-create-dir-mydir` with `4` attempts, sleeping
+`0.5` seconds and removing `mydir` as cleanup action:
+```toml
+shell.cmd = "possibly-create-dir-mydir"
+try.attempts = 4
+try.sleep = 0.5
+try.cleanup.task.shell.cmd = "rm -rf mydir"
 ```
 
 
