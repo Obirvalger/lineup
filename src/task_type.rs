@@ -84,7 +84,7 @@ impl EnsureType {
             } else {
                 warn!("taskline absent in context for EnsureType");
             }
-            bail!(Error::EnsureAbsentVars(absent_vars.join(" "), taskline))
+            bail!(Error::EnsureAbsentVars(absent_vars.join(", "), taskline))
         }
 
         Ok(())
