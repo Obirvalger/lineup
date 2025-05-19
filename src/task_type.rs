@@ -606,16 +606,16 @@ impl TaskType {
                 module: Default::default(),
             })
             .run(&context, dir, tasklines, workers, worker),
-            Self::RunTaskline(RunTasklineType { taskline, module }) => {
+            Self::RunTaskline(RunTasklineType { taskline: taskline_name, module }) => {
                 let module = module.render(&context, "run-taskline file")?;
-                let taskline_name = taskline.render(&context, "run-taskline taskline")?;
+                let taskline_name = taskline_name.render(&context, "run-taskline taskline")?;
                 let mut taskline_file = "".to_string();
                 let mut dir = dir.to_owned();
                 let mut new_tasklines = tasklines.to_owned();
                 let mut taskline = if module.display().to_string().is_empty() {
                     tasklines
                         .get(&taskline_name)
-                        .ok_or(Error::BadTaskline(taskline.to_string(), PathBuf::from("")))?
+                        .ok_or(Error::BadTaskline(taskline_name.to_string(), PathBuf::from("")))?
                         .to_owned()
                 } else {
                     let file = module::resolve(&module, &dir);
