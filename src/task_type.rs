@@ -8,6 +8,7 @@ use serde_json::Value;
 
 use crate::cmd::CmdOut;
 use crate::config::CONFIG;
+use crate::engine::ExistsAction;
 use crate::error::Error;
 use crate::exception::Exception;
 use crate::manifest::Tasklines;
@@ -357,6 +358,21 @@ impl ExecType {
     }
 }
 
+fn default_run_lineup_clean() -> bool {
+    true
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct RunLineupType {
+    manifest: String,
+    exists: Option<ExistsAction>,
+    #[serde(default = "default_run_lineup_clean")]
+    clean: bool,
+    #[serde(default)]
+    vars: Vars,
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct RunTasklineType {
@@ -492,6 +508,7 @@ pub enum TaskType {
     File(FileType),
     Get(GetType),
     Info(InfoType),
+    RunLineup(RunLineupType),
     Run(String),
     RunTaskline(RunTasklineType),
     RunTaskset(RunTasksetType),
@@ -600,6 +617,19 @@ impl TaskType {
                 } else {
                     Ok(context.get("result").cloned().unwrap_or(Value::Null).into())
                 }
+            }
+            Self::RunLineup(RunLineupType { manifest, exists, clean, vars }) => {
+                let manifest = manifest.render(&context, "run-lineup manifest")?;
+                let vars = vars.render(&context, "run-lineup vars")?;
+                context.extend(vars.context()?);
+                let mut runner = Runner::from_manifest(manifest, &context)?;
+                runner.add_extra_vars(vars);
+                runner.set_worker_exists_action(exists.to_owned());
+                runner.run()?;
+                if *clean {
+                    runner.clean()?;
+                }
+                Ok(Value::Null.into())
             }
             Self::Run(taskline) => Self::RunTaskline(RunTasklineType {
                 taskline: taskline.to_owned(),

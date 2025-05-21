@@ -226,6 +226,7 @@ There are several types of tasks:
 * [file](#File-task) - Copy a file to the worker;
 * [get](#Get-task) - Copy a file from the worker;
 * [info](#Info-task) - Show message with log info;
+* [run-lineup](#RunLineup-task) - Run a lineup manifest;
 * [run-taskline](#RunTaskline-task) - Run a taskline from the file;
 * [run-taskset](#RunTaskset-task) - Run a taskset from the file;
 * [run](#Run-task) - Run a taskline;
@@ -353,6 +354,21 @@ parameter.
 Example of greeting the worker:
 ```toml
 info.msg = "Hello {{ worker }}!"
+```
+
+## RunLineup task
+Run a lineup manifest. Fields:
+* `manifest` - Path to the lineup manifest;
+* `exists` - Perform an action when a worker exists, variants are
+    `fail`, `ignore`, and `replace`.
+* `clean` - Boolean value controlling clean;
+* `vars` - Pass extra vars to the manifest.
+
+**Return:** `null`.
+
+Example of running lineup manifest `build/LM.toml`:
+```toml
+run-lineup.manifest = "build/LM.toml"
 ```
 
 ## Run task
