@@ -17,7 +17,8 @@ use crate::manifest::{Manifest, Tasklines, Taskset};
 use crate::module;
 use crate::network::Network;
 use crate::render::Render;
-use crate::storage::Storage;
+use crate::storage::{Storage, Storages};
+use crate::task::Env;
 use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::tsort::tsort;
@@ -45,7 +46,7 @@ pub struct Runner {
     pub tasklines: Tasklines,
     pub vars: Vars,
     pub networks: Vec<Network>,
-    pub storages: Vec<Storage>,
+    pub storages: Storages,
     pub workers: Vec<Worker>,
     pub dir: PathBuf,
     worker_exists: Option<ExistsAction>,
@@ -201,6 +202,10 @@ impl Runner {
         self.vars.extend(vars);
     }
 
+    pub fn set_storages(&mut self, storages: &Storages) {
+        self.storages = storages.to_owned();
+    }
+
     pub fn set_workers(&mut self, workers: &[Worker]) {
         self.workers = Vec::from(workers);
     }
@@ -222,7 +227,7 @@ impl Runner {
             network.remove()?;
         }
 
-        for storage in &mut self.storages {
+        for storage in self.storages.values_mut() {
             storage.remove()?;
         }
 
@@ -232,14 +237,6 @@ impl Runner {
     fn setup_networks(&self) -> Result<()> {
         for network in &self.networks {
             network.setup()?;
-        }
-
-        Ok(())
-    }
-
-    fn setup_storages(&self) -> Result<()> {
-        for storage in &self.storages {
-            storage.setup()?;
         }
 
         Ok(())
@@ -261,7 +258,6 @@ impl Runner {
             .collect::<BTreeMap<_, _>>();
 
         self.setup_networks()?;
-        self.setup_storages()?;
 
         let layers = tsort(&tasks_graph, "taskset requires")?;
         save_layers(&layers)?;
@@ -280,7 +276,9 @@ impl Runner {
                     .par_iter_mut()
                     .filter_map(|worker| -> Option<Result<String>> {
                         if workers_re_set.is_match(&worker.name()) {
-                            if let Err(error) = worker.ensure_setup(&self.worker_exists) {
+                            if let Err(error) =
+                                worker.ensure_setup(&self.worker_exists, &self.storages)
+                            {
                                 return Some(Err(error));
                             }
                             Some(Ok(worker.name()))
@@ -307,6 +305,14 @@ impl Runner {
                     .map(|w| w.to_owned())
                     .collect::<Vec<_>>();
                 let task = &taskset_elem.task;
+
+                let env = Env {
+                    dir: &self.dir,
+                    storages: &self.storages,
+                    tasklines: &self.tasklines,
+                    workers: &provide_workers,
+                };
+
                 self.workers.par_iter().try_for_each(|worker| -> Result<()> {
                     if workers_by_task
                         .get(name)
@@ -316,16 +322,8 @@ impl Runner {
                     {
                         let mut context = context.to_owned();
                         context.insert("worker", &worker.name());
-                        let result = task
-                            .run(
-                                &Some(name),
-                                &context,
-                                &self.dir,
-                                &self.tasklines,
-                                &provide_workers,
-                                worker,
-                            )
-                            .with_context(|| {
+                        let result =
+                            task.run(&Some(name), &context, &env, worker).with_context(|| {
                                 format!("taskset task: `{}`, worker: `{}`", name, worker.name())
                             })?;
                         if let Some(exception) = result.as_exception() {

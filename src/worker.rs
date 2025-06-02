@@ -10,6 +10,7 @@ use crate::error::Error;
 use crate::manifest::DefaultWorker;
 use crate::manifest::Workers as ManifestWorkers;
 use crate::render::Render;
+use crate::storage::Storages;
 use crate::task_type::{CmdParams, SpecialTypeType};
 use crate::template::Context;
 
@@ -111,9 +112,13 @@ impl Worker {
         old_name
     }
 
-    pub fn ensure_setup(&mut self, action: &Option<ExistsAction>) -> Result<()> {
+    pub fn ensure_setup(
+        &mut self,
+        action: &Option<ExistsAction>,
+        storages: &Storages,
+    ) -> Result<()> {
         if !self.setup {
-            self.engine.setup(&self.name, action)?;
+            self.engine.setup(&self.name, action, storages)?;
             let cmd = "echo ${TMPDIR:-${TMP:-/tmp}}/lineup";
             let out = self.engine.shell_out(&self.name, cmd, &None)?;
             if !out.success() {

@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use anyhow::Result;
 
 use crate::manifest::Storages as ManifestStorages;
@@ -6,6 +8,8 @@ use crate::storage::engine::Engine;
 use crate::template::Context;
 
 mod engine;
+
+pub type Storages = BTreeMap<String, Storage>;
 
 #[derive(Clone, Debug)]
 pub struct Storage {
@@ -17,16 +21,16 @@ impl Storage {
     pub fn from_manifest_storages(
         manifest_storages: &ManifestStorages,
         context: &Context,
-    ) -> Result<Vec<Self>> {
-        let mut storages = Vec::with_capacity(manifest_storages.len());
+    ) -> Result<BTreeMap<String, Self>> {
+        let mut storages = BTreeMap::new();
         for (volume, manifest_storage) in manifest_storages {
             let volume = volume.render(context, "storage in manifest")?;
             let storage = Storage {
-                volume,
+                volume: volume.to_string(),
                 engine: Engine::from_manifest_engine(context, &manifest_storage.engine)?,
             };
 
-            storages.push(storage);
+            storages.insert(volume, storage);
         }
 
         Ok(storages)

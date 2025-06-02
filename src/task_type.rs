@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Context as AnyhowContext;
 use anyhow::{bail, Result};
@@ -11,12 +11,12 @@ use crate::config::CONFIG;
 use crate::engine::ExistsAction;
 use crate::error::Error;
 use crate::exception::Exception;
-use crate::manifest::Tasklines;
 use crate::matches::Matches;
 use crate::module;
 use crate::quote::quote;
 use crate::render::Render;
 use crate::runner::Runner;
+use crate::task::Env;
 use crate::task_result::TaskResult;
 use crate::taskline::Taskline;
 use crate::template::Context;
@@ -520,14 +520,7 @@ pub enum TaskType {
 }
 
 impl TaskType {
-    pub fn run(
-        &self,
-        context: &Context,
-        dir: &Path,
-        tasklines: &Tasklines,
-        workers: &[Worker],
-        worker: &Worker,
-    ) -> Result<TaskResult> {
+    pub fn run(&self, context: &Context, env: &Env, worker: &Worker) -> Result<TaskResult> {
         let mut context = context.to_owned();
         match self {
             Self::Break(BreakType { taskline, result }) => {
@@ -603,7 +596,7 @@ impl TaskType {
                 } else {
                     let name =
                         src.file_name().ok_or_else(|| Error::GetSrcFilename(src.to_owned()))?;
-                    dir.join(name)
+                    env.dir.join(name)
                 };
                 worker.get(src, &dst)?;
 
@@ -635,15 +628,15 @@ impl TaskType {
                 taskline: taskline.to_owned(),
                 module: Default::default(),
             })
-            .run(&context, dir, tasklines, workers, worker),
+            .run(&context, env, worker),
             Self::RunTaskline(RunTasklineType { taskline: taskline_name, module }) => {
                 let module = module.render(&context, "run-taskline file")?;
                 let taskline_name = taskline_name.render(&context, "run-taskline taskline")?;
                 let mut taskline_file = "".to_string();
-                let mut dir = dir.to_owned();
-                let mut new_tasklines = tasklines.to_owned();
+                let mut dir = env.dir.to_owned();
+                let mut new_tasklines = env.tasklines.to_owned();
                 let mut taskline = if module.display().to_string().is_empty() {
-                    tasklines
+                    env.tasklines
                         .get(&taskline_name)
                         .ok_or(Error::BadTaskline(taskline_name.to_string(), PathBuf::from("")))?
                         .to_owned()
@@ -681,6 +674,10 @@ impl TaskType {
                 };
                 context.insert("taskline", &taskline_str);
 
+                let mut env = env.to_owned();
+                env.tasklines = &new_tasklines;
+                env.dir = &dir;
+
                 let mut value = Value::Null;
                 for (iter, task) in taskline
                     .as_line()
@@ -688,10 +685,8 @@ impl TaskType {
                     .iter()
                     .enumerate()
                 {
-                    let result = task
-                        .task
-                        .run(&task.name, &context, &dir, &new_tasklines, workers, worker)
-                        .with_context(|| {
+                    let result =
+                        task.task.run(&task.name, &context, &env, worker).with_context(|| {
                             format!("taskline: `{}`, number: `{}`", taskline_str, iter)
                         })?;
 
@@ -719,13 +714,13 @@ impl TaskType {
             }
             Self::RunTaskset(RunTasksetType { module, worker }) => {
                 let module = module.render(&context, "run-taskline file")?;
-                let file = module::resolve(&module, dir);
+                let file = module::resolve(&module, env.dir);
                 let new_workers = match worker {
-                    RunTasksetTypeWorker::All => workers.to_owned(),
+                    RunTasksetTypeWorker::All => env.workers.to_owned(),
                     RunTasksetTypeWorker::Maps(maps) => {
                         let maps = maps.render(&context, "run-taskset maps")?;
                         let mut new_workers = vec![];
-                        for worker in workers {
+                        for worker in env.workers.iter() {
                             for map in &maps {
                                 if map.0 == worker.name() {
                                     let mut new_worker = worker.to_owned();
@@ -738,7 +733,7 @@ impl TaskType {
                     }
                     RunTasksetTypeWorker::Names(names) => {
                         let names = names.render(&context, "run-taskset maps")?;
-                        workers
+                        env.workers
                             .iter()
                             .filter(|w| names.contains(&w.name()))
                             .map(|w| w.to_owned())
@@ -748,6 +743,7 @@ impl TaskType {
 
                 let mut runner = Runner::from_manifest(file, &context)?;
                 runner.add_extra_vars(Vars::from(context.to_owned()));
+                runner.set_storages(env.storages);
                 runner.set_workers(&new_workers);
                 runner.run()?;
                 Ok(Value::Null.into())

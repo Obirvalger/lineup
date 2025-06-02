@@ -45,6 +45,8 @@ pub enum Error {
     NoFsVar(String),
     #[error("items variable `{0}` does not set")]
     NoItemsVar(String),
+    #[error("volume `{0}` is not defined")]
+    NoVolume(String),
     #[error("workers should be set")]
     NoWorkers,
     #[error("failed tsort in {0}")]

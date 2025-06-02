@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::num::NonZeroU32;
-use std::path::Path;
+use std::path::PathBuf;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -16,12 +16,21 @@ use crate::fs_var::FsVar;
 use crate::items::Items;
 use crate::manifest::Tasklines;
 use crate::render::Render;
+use crate::storage::Storages;
 use crate::table::Table;
 use crate::task_result::TaskResult;
 use crate::task_type::{CmdParams, TaskType};
 use crate::template::Context;
 use crate::vars::ExtVars;
 use crate::worker::Worker;
+
+#[derive(Clone, Debug)]
+pub struct Env<'a> {
+    pub dir: &'a PathBuf,
+    pub storages: &'a Storages,
+    pub tasklines: &'a Tasklines,
+    pub workers: &'a Vec<Worker>,
+}
 
 fn show_duration(duration: Duration) -> String {
     let ms = duration.as_millis();
@@ -102,9 +111,7 @@ impl Task {
         &self,
         name: &Option<S>,
         context: &Context,
-        dir: &Path,
-        tasklines: &Tasklines,
-        workers: &[Worker],
+        env: &Env,
         worker: &Worker,
     ) -> Result<TaskResult> {
         let context = if self.clean_vars { Context::default() } else { context.to_owned() };
@@ -186,8 +193,7 @@ impl Task {
 
                         let start = Instant::now();
                         let mut attempts = "".to_string();
-                        let mut res =
-                            self.task_type.run(&context, dir, tasklines, workers, worker);
+                        let mut res = self.task_type.run(&context, env, worker);
                         if let Some(try_) = &self.try_ {
                             let mut final_attempt = 1;
                             for attempt in 1..=try_.attempts.get() {
@@ -195,17 +201,11 @@ impl Task {
                                 if res.is_err() {
                                     thread::sleep(try_.sleep);
                                     if let Some(cleanup) = &try_.cleanup {
-                                        if cleanup
-                                            .task
-                                            .run(&context, dir, tasklines, workers, worker)
-                                            .is_err()
-                                        {
+                                        if cleanup.task.run(&context, env, worker).is_err() {
                                             warn!("Cleanup command failed");
                                         }
                                     }
-                                    res = self
-                                        .task_type
-                                        .run(&context, dir, tasklines, workers, worker);
+                                    res = self.task_type.run(&context, env, worker);
                                 } else {
                                     break;
                                 }

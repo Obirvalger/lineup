@@ -1,14 +1,16 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use cmd_lib::{run_cmd, run_fun};
 
 use crate::cmd::Cmd;
 use crate::engine::{EngineBase, ExistsAction};
+use crate::error::Error;
 use crate::manifest::EngineIncus as ManifestEngineIncus;
 use crate::manifest::{EngineIncusNet, EngineIncusStorage};
 use crate::render::Render;
+use crate::storage::Storages;
 use crate::template::Context;
 
 #[derive(Clone, Debug)]
@@ -46,7 +48,12 @@ impl EngineIncus {
         })
     }
 
-    pub fn start<S: AsRef<str>>(&self, name: S, action: &Option<ExistsAction>) -> Result<()> {
+    pub fn start<S: AsRef<str>>(
+        &self,
+        name: S,
+        action: &Option<ExistsAction>,
+        storages: &Storages,
+    ) -> Result<()> {
         let incus = self.incus_bin.to_string();
         let image = self.image.to_string();
         let name = self.n(name);
@@ -102,6 +109,12 @@ impl EngineIncus {
             options.push(format!("source={volume}"));
             if storage.readonly {
                 options.push("readonly=true".to_string());
+            }
+
+            if let Some(storage) = storages.get(volume) {
+                storage.setup()?;
+            } else {
+                bail!(Error::NoVolume(volume.to_string()));
             }
 
             run_fun!($incus config device add -q $name $volume disk path=$path $[options])?;

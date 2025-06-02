@@ -19,6 +19,7 @@ use crate::engine::vml::EngineVml;
 use crate::error::Error;
 use crate::manifest::Engine as ManifestEngine;
 use crate::matches::Matches;
+use crate::storage::Storages;
 use crate::task_type::{CmdParams, SpecialTypeType};
 use crate::template::Context;
 
@@ -92,14 +93,19 @@ impl Engine {
         }
     }
 
-    pub fn setup<S: AsRef<str>>(&self, name: S, action: &Option<ExistsAction>) -> Result<()> {
+    pub fn setup<S: AsRef<str>>(
+        &self,
+        name: S,
+        action: &Option<ExistsAction>,
+        storages: &Storages,
+    ) -> Result<()> {
         if !self.base().setup {
             return Ok(());
         };
         match self {
             Engine::Dbg(_engine) => Ok(()),
             Engine::Docker(engine) => engine.start(name, action),
-            Engine::Incus(engine) => engine.start(name, action),
+            Engine::Incus(engine) => engine.start(name, action, storages),
             Engine::Host(_engine) => Ok(()),
             Engine::Podman(engine) => engine.start(name, action),
             Engine::Ssh(_engine) => Ok(()),

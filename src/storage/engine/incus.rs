@@ -28,7 +28,7 @@ impl EngineIncus {
         let volume = volume.as_ref();
         let pool = &self.pool;
 
-        let exists = run_fun!($incus storage volume ls $pool -f json name=$volume)?;
+        let exists = run_fun!($incus storage volume ls $pool -f json name=$volume type=custom)?;
 
         Ok(exists != "[]")
     }
