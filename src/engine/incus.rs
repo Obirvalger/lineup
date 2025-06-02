@@ -104,6 +104,8 @@ impl EngineIncus {
             let path = &storage.path;
             let pool = &storage.pool;
 
+            let volume = storage.volume.to_owned().unwrap_or_else(|| volume.to_string());
+
             let mut options = vec![];
             options.push(format!("pool={pool}"));
             options.push(format!("source={volume}"));
@@ -111,7 +113,7 @@ impl EngineIncus {
                 options.push("readonly=true".to_string());
             }
 
-            if let Some(storage) = storages.get(volume) {
+            if let Some(storage) = storages.get(&volume) {
                 storage.setup()?;
             } else {
                 bail!(Error::NoVolume(volume.to_string()));

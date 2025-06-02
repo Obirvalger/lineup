@@ -284,13 +284,15 @@ pub struct EngineIncusStorage {
     pub pool: String,
     #[serde(default = "default_engine_incus_storage_readonly")]
     pub readonly: bool,
+    pub volume: Option<String>,
 }
 
 impl Render for EngineIncusStorage {
     fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
         let pool = self.pool.render(context, format!("pool in {}", place.as_ref()))?;
         let path = self.path.render(context, format!("path in {}", place.as_ref()))?;
-        Ok(Self { pool, path, readonly: self.readonly })
+        let volume = self.volume.render(context, format!("volume in {}", place.as_ref()))?;
+        Ok(Self { pool, path, readonly: self.readonly, volume })
     }
 }
 

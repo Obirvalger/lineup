@@ -659,7 +659,8 @@ Storage options are:
 * `pool` - Pool for storage creation;
 * `path` - Path within the container where the volume will be mounted;
 * `readonly` - Bool value specifying whether the storage should be used in
-    readonly mode.
+    readonly mode;
+* `volume` - Overwrite volume from `storages` key.
 
 Example of an incus worker with name `gyle` and `alt/Sisyphus` image with the
 `people` storage in the default pool used in a readonly mode:
