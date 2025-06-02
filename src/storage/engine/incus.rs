@@ -8,6 +8,7 @@ use crate::template::Context;
 #[derive(Clone, Debug)]
 pub struct EngineIncus {
     pub pool: String,
+    pub copy: Option<String>,
     incus_bin: String,
 }
 
@@ -20,7 +21,7 @@ impl EngineIncus {
             manifest_engine_incus.render(context, "storage engine in manifest")?;
         let incus_bin = "incus".to_string();
 
-        Ok(Self { pool: manifest_engine_incus.pool, incus_bin })
+        Ok(Self { pool: manifest_engine_incus.pool, copy: manifest_engine_incus.copy, incus_bin })
     }
 
     fn exists<S: AsRef<str>>(&self, volume: S) -> Result<bool> {
@@ -42,7 +43,11 @@ impl EngineIncus {
         let volume = volume.as_ref();
         let pool = &self.pool;
 
-        run_fun!($incus storage volume create $pool $volume -q)?;
+        if let Some(from) = &self.copy {
+            run_fun!($incus storage volume copy $pool/$from $pool/$volume -q)?;
+        } else {
+            run_fun!($incus storage volume create $pool $volume -q)?;
+        }
 
         Ok(())
     }

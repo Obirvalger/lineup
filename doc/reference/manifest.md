@@ -142,6 +142,7 @@ There is one engine type:
 Storage for container engine incus.
 Incus-specific options are:
 * `pool` - Pool for storage creation;
+* `copy` - Volume in the same pool used as origin.
 
 Example of creating an incus storage `people` in the default pool:
 ```toml

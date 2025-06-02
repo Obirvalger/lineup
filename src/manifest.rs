@@ -92,13 +92,15 @@ fn default_storage_engine_pool() -> String {
 pub struct StorageEngineIncus {
     #[serde(default = "default_storage_engine_pool")]
     pub pool: String,
+    pub copy: Option<String>,
 }
 
 impl Render for StorageEngineIncus {
     fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
         let place = format!("incus storage engine in {}", place.as_ref());
         let pool = self.pool.render(context, format!("pool in {}", place))?;
-        Ok(Self { pool })
+        let copy = self.copy.render(context, format!("copy in {}", place))?;
+        Ok(Self { pool, copy })
     }
 }
 
