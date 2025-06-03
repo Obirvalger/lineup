@@ -317,7 +317,7 @@ pub struct EngineIncus {
 
 impl Render for EngineIncus {
     fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
-        let place = format!("docker engine in {}", place.as_ref());
+        let place = format!("incus engine in {}", place.as_ref());
         let memory = self.memory.render(context, format!("memory in {}", place))?;
         let net = self.net.render(context, format!("net in {}", place))?;
         let nproc = self.nproc.render(context, format!("nproc in {}", place))?;
