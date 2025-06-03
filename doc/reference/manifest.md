@@ -426,7 +426,7 @@ Example of running a taskset from the file `./LM-ts.toml` with renaming a
 ```toml
 [taskset.setup]
 run-taskline.module = "./LM-ts.toml"
-run-taskline.worker.map = [
+run-taskline.worker.maps = [
     ["main-worker", "taskset-worker"]
 ]
 provide-workers = ["main-worker"]
