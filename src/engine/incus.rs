@@ -19,6 +19,7 @@ pub struct EngineIncus {
     pub net: Option<EngineIncusNet>,
     pub nproc: Option<String>,
     pub image: String,
+    pub copy: Option<String>,
     pub storages: BTreeMap<String, EngineIncusStorage>,
     pub user: Option<String>,
     pub exists: ExistsAction,
@@ -40,6 +41,7 @@ impl EngineIncus {
             net: manifest_engine_incus.net,
             nproc,
             image: manifest_engine_incus.image,
+            copy: manifest_engine_incus.copy,
             storages: manifest_engine_incus.storages,
             user: manifest_engine_incus.user,
             exists: manifest_engine_incus.exists,
@@ -79,7 +81,15 @@ impl EngineIncus {
             }
         }
 
-        run_fun!($incus init -q images:$image $name)?;
+        if let Some(from) = &self.copy {
+            run_fun!($incus copy -q $from $name)?;
+            let storages = run_fun!($incus config device list $name)?;
+            for storage in storages.trim_end().lines() {
+                run_fun!($incus config device rm -q $name $storage)?;
+            }
+        } else {
+            run_fun!($incus init -q images:$image $name)?;
+        }
 
         if let Some(memory) = &self.memory {
             run_fun!(incus config set $name limits.memory=$memory)?;

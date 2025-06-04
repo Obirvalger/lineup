@@ -641,6 +641,7 @@ image = "alt"
 Container engine using incus.
 Incus-specific options are:
 * `image` - Image;
+* `copy` - Copy created incus container;
 * `net` - Describe network;
 * `nproc` - Number of processors;
 * `memory` - Amount of memory;
