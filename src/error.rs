@@ -47,6 +47,8 @@ pub enum Error {
     NoItemsVar(String),
     #[error("volume `{0}` is not defined")]
     NoVolume(String),
+    #[error("no workers satisfy the constraints for a task `{0}`")]
+    NoWorkersForTask(String),
     #[error("workers should be set")]
     NoWorkers,
     #[error("failed tsort in {0}")]

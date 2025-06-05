@@ -288,7 +288,11 @@ impl Runner {
                     })
                     .collect::<Result<Vec<_>, _>>()?;
 
-                workers_by_task.insert(name, worker_names);
+                if worker_names.is_empty() {
+                    bail!(Error::NoWorkersForTask(name.to_string()));
+                } else {
+                    workers_by_task.insert(name, worker_names);
+                }
             }
 
             layer.par_iter().try_for_each(|name| -> Result<()> {
