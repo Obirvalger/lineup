@@ -23,14 +23,25 @@ impl Storage {
         context: &Context,
     ) -> Result<BTreeMap<String, Self>> {
         let mut storages = BTreeMap::new();
+        let mut context = context.to_owned();
         for (volume, manifest_storage) in manifest_storages {
-            let volume = volume.render(context, "storage in manifest")?;
-            let storage = Storage {
-                volume: volume.to_string(),
-                engine: Engine::from_manifest_engine(context, &manifest_storage.engine)?,
-            };
+            let items = manifest_storage
+                .items
+                .as_ref()
+                .map(|i| i.list(&context))
+                .transpose()?
+                .unwrap_or_else(|| vec!["".to_string()]);
 
-            storages.insert(volume, storage);
+            for item in items {
+                context.insert("item", &item);
+                let volume = volume.render(&context, "storage in manifest")?;
+                let storage = Storage {
+                    volume: volume.to_string(),
+                    engine: Engine::from_manifest_engine(&context, &manifest_storage.engine)?,
+                };
+
+                storages.insert(volume, storage);
+            }
         }
 
         Ok(storages)

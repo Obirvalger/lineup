@@ -114,6 +114,7 @@ pub enum StorageEngine {
 #[serde(rename_all = "kebab-case")]
 #[serde(deny_unknown_fields)]
 pub struct Storage {
+    pub items: Option<Items>,
     pub engine: StorageEngine,
 }
 

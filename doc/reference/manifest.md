@@ -133,6 +133,7 @@ Storages describe storage volumes for workers. It is a table with volume
 names as keys. Values are storage structs. The struct is represented via a
 table. Values are:
 * [engine](#Storage-engine) - Specify parameters of a concrete engine (e.g., incus);
+* [items](#Items) - Multiplier to create several storages.
 
 ## Storage engine
 There is one engine type:
@@ -737,9 +738,9 @@ mem = "2G"
 
 
 # Items
-Items are used to multiply [workers](#Worker-items) or [tasks](#Task-items).
-It sets a [template](templates.md) variable `item`, which can be used in
-strings as `{{ item }}`. Items could be one of four forms:
+Items are used to multiply [workers](#Worker-items), [storages](#Storage-items)
+or [tasks](#Task-items). It sets a [template](templates.md) variable `item`,
+which can be used in strings as `{{ item }}`. Items could be one of four forms:
 1. Array of strings or integers:
    ```toml
    items = ["a", 2]
@@ -771,6 +772,15 @@ items = ["master", "worker"]
 [workers."buildbot-{{item}}".engine.podman]
 image = "alt:sisyphus"
 pod = "lineup-bb"
+```
+
+## Storage items
+When used with storages, the item could be used in the storage's name. Example of
+creating two incus storages `tasks-origin` and `tasks-sequential`:
+
+```toml
+[storages.'tasks-{{ item }}']
+items = ["origin", "sequential"]
 ```
 
 ## Task items
