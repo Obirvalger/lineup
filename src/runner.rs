@@ -270,7 +270,9 @@ impl Runner {
             for name in &layer {
                 let taskset_elem =
                     self.taskset.get(name).ok_or(Error::BadTaskInTaskset(name.to_string()))?;
-                let workers_re_set = RegexSet::new(&taskset_elem.workers)?;
+                let workers_re =
+                    taskset_elem.workers.iter().map(|w| format!("^{w}$")).collect::<Vec<_>>();
+                let workers_re_set = RegexSet::new(&workers_re)?;
                 let worker_names = self
                     .workers
                     .par_iter_mut()
