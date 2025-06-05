@@ -68,7 +68,7 @@ impl EngineIncus {
                 if exists != "[]" {
                     let stopped = run_fun!($incus ls -f json status=stopped name=$name)?;
                     if stopped != "[]" {
-                        run_fun!($incus start $name)?;
+                        run_fun!($incus start -q $name)?;
                     }
                     return Ok(());
                 }
@@ -102,11 +102,11 @@ impl EngineIncus {
             let device = &net.device;
 
             if let Some(network) = &net.network {
-                run_fun!($incus network attach $network $name $device $device)?;
+                run_fun!($incus network attach -q $network $name $device $device)?;
             }
 
             if let Some(address) = &net.address {
-                run_fun!($incus config device set $name $device ipv4.address=$address)?;
+                run_fun!($incus config device set -q $name $device ipv4.address=$address)?;
             }
         }
 
@@ -132,7 +132,7 @@ impl EngineIncus {
             run_fun!($incus config device add -q $name $volume disk path=$path $[options])?;
         }
 
-        run_fun!($incus start $name)?;
+        run_fun!($incus start -q $name)?;
         Ok(())
     }
 
@@ -140,8 +140,8 @@ impl EngineIncus {
         let incus = &self.incus_bin;
         let name = self.n(name);
 
-        run_fun!($incus stop $name)?;
-        run_fun!($incus start $name)?;
+        run_fun!($incus stop -q $name)?;
+        run_fun!($incus start -q $name)?;
         Ok(())
     }
 
@@ -190,7 +190,7 @@ impl EngineIncus {
             dst = Self::strip_same_name_dst(src, dst);
         }
 
-        run_cmd!($incus file push $[options] $src $name/$dst)?;
+        run_cmd!($incus file push -q $[options] $src $name/$dst)?;
 
         Ok(())
     }
@@ -214,7 +214,7 @@ impl EngineIncus {
             dst = Self::strip_same_name_dst(src, dst);
         }
 
-        run_cmd!($incus file pull $[options] $name/$src $dst)?;
+        run_cmd!($incus file pull -q $[options] $name/$src $dst)?;
 
         Ok(())
     }
