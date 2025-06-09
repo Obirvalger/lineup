@@ -1,3 +1,6 @@
+use std::collections::BTreeMap;
+use std::cmp::Ord;
+
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -40,6 +43,20 @@ impl<R1: Render, R2: Render> Render for (R1, R2) {
 impl<R: Render> Render for Vec<R> {
     fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
         self.iter().map(|r| r.render(context, place.as_ref())).collect()
+    }
+}
+
+impl<R1: Render + Ord, R2: Render> Render for BTreeMap<R1, R2> {
+    fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self> {
+        let mut rendered = BTreeMap::new();
+        for (key, value) in self {
+            rendered.insert(
+                key.render(context, place.as_ref())?,
+                value.render(context, place.as_ref())?,
+            );
+        }
+
+        Ok(rendered)
     }
 }
 

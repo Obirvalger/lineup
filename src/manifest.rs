@@ -325,9 +325,11 @@ impl Render for EngineIncus {
         let nproc = self.nproc.render(context, format!("nproc in {}", place))?;
         let image = self.image.render(context, format!("image in {}", place))?;
         let copy = self.copy.render(context, format!("copy in {}", place))?;
+        let storages = self.storages.render(context, format!("storages in {}", place))?;
         let user = self.user.render(context, format!("user in {}", place))?;
+        let exists = self.exists.to_owned();
         let base = self.base.render(context, format!("base in {}", place))?;
-        Ok(Self { memory, net, nproc, image, copy, user, base, ..self.to_owned() })
+        Ok(Self { memory, net, nproc, image, copy, storages, user, exists, base })
     }
 }
 
