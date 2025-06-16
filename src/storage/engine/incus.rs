@@ -1,6 +1,10 @@
-use anyhow::Result;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+
+use anyhow::{bail, Result};
 use cmd_lib::run_fun;
 
+use crate::error::Error;
 use crate::manifest::StorageEngineIncus as ManifestEngineIncus;
 use crate::render::Render;
 use crate::template::Context;
@@ -10,6 +14,7 @@ pub struct EngineIncus {
     pub pool: String,
     pub copy: Option<String>,
     incus_bin: String,
+    is_setup: Arc<AtomicBool>,
 }
 
 impl EngineIncus {
@@ -21,7 +26,12 @@ impl EngineIncus {
             manifest_engine_incus.render(context, "storage engine in manifest")?;
         let incus_bin = "incus".to_string();
 
-        Ok(Self { pool: manifest_engine_incus.pool, copy: manifest_engine_incus.copy, incus_bin })
+        Ok(Self {
+            pool: manifest_engine_incus.pool,
+            copy: manifest_engine_incus.copy,
+            incus_bin,
+            is_setup: Arc::new(AtomicBool::new(false)),
+        })
     }
 
     fn exists<S: AsRef<str>>(&self, volume: S) -> Result<bool> {
@@ -35,9 +45,13 @@ impl EngineIncus {
     }
 
     pub fn setup<S: AsRef<str>>(&self, volume: S) -> Result<()> {
-        if self.exists(volume.as_ref())? {
+        if self
+            .is_setup
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_err()
+        {
             return Ok(());
-        }
+        };
 
         let incus = &self.incus_bin;
         let volume = volume.as_ref();
@@ -49,7 +63,11 @@ impl EngineIncus {
             run_fun!($incus storage volume create $pool $volume -q)?;
         }
 
-        Ok(())
+        if self.exists(volume)? {
+            Ok(())
+        } else {
+            bail!(Error::FailSetupIncusVolume(volume.to_string()))
+        }
     }
 
     pub fn remove<S: AsRef<str>>(&self, volume: S) -> Result<()> {

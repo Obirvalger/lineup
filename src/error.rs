@@ -33,6 +33,8 @@ pub enum Error {
     CommandFailedSuccsessMatches(String),
     #[error("variables `{0}` are not set for taskline `{1}`")]
     EnsureAbsentVars(String, String),
+    #[error("failed to setup incus volume `{0}`")]
+    FailSetupIncusVolume(String),
     #[error("get task's src `{0}` has no filename")]
     GetSrcFilename(PathBuf),
     #[error("trying to init manifest `{0}` that already exists")]
