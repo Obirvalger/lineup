@@ -113,7 +113,10 @@ impl EnginePodman {
         let podman = self.podman_bin.to_string();
         let name = self.n(name);
         if run_cmd!($podman container exists $name).is_ok() {
-            run_fun!($podman kill $name)?;
+            let running = run_fun!($podman container inspect -f "{{.State.Running}}" $name)?;
+            if running == "true" {
+                run_fun!($podman kill $name)?;
+            }
             run_fun!($podman rm -f $name)?;
         }
 
