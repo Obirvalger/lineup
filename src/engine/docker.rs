@@ -65,8 +65,9 @@ impl EngineDocker {
         match action {
             ExistsAction::Fail => (),
             ExistsAction::Ignore => {
-                if run_cmd!($docker inspect -f "{{.Id}}" $name >/dev/null 2>&1).is_ok() {
-                    let running = run_fun!(docker inspect -f "{{.State.Running}}" $name)?;
+                if run_cmd!($docker container inspect -f "{{.Id}}" $name >/dev/null 2>&1).is_ok() {
+                    let running =
+                        run_fun!($docker container inspect -f "{{.State.Running}}" $name)?;
                     if running == "false" {
                         run_fun!($docker start $name)?;
                     }
@@ -95,7 +96,7 @@ impl EngineDocker {
         let docker = self.docker_bin.to_string();
         let name = self.n(name);
 
-        if run_cmd!($docker inspect -f "{{.Id}}" $name >/dev/null 2>&1).is_ok() {
+        if run_cmd!($docker container inspect -f "{{.Id}}" $name >/dev/null 2>&1).is_ok() {
             run_fun!($docker rm -f $name)?;
         }
 
