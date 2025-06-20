@@ -77,7 +77,8 @@ impl EnginePodman {
             ExistsAction::Fail => (),
             ExistsAction::Ignore => {
                 if run_cmd!($podman container exists $name).is_ok() {
-                    let running = run_fun!(podman inspect -f "{{.State.Running}}" $name)?;
+                    let running =
+                        run_fun!($podman container inspect -f "{{.State.Running}}" $name)?;
                     if running == "false" {
                         run_fun!($podman start $name)?;
                     }
