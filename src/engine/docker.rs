@@ -83,12 +83,28 @@ impl EngineDocker {
         Ok(())
     }
 
+    pub fn start_simple<S: AsRef<str>>(&self, name: S) -> Result<()> {
+        let docker = &self.docker_bin;
+        let name = self.n(name);
+
+        run_fun!($docker start $name)?;
+        Ok(())
+    }
+
     pub fn restart<S: AsRef<str>>(&self, name: S) -> Result<()> {
         let docker = &self.docker_bin;
         let name = self.n(name);
 
         run_fun!($docker stop $name)?;
         run_fun!($docker start $name)?;
+        Ok(())
+    }
+
+    pub fn stop<S: AsRef<str>>(&self, name: S) -> Result<()> {
+        let docker = &self.docker_bin;
+        let name = self.n(name);
+
+        run_fun!($docker stop $name)?;
         Ok(())
     }
 

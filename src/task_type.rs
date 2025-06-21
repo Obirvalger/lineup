@@ -426,6 +426,8 @@ impl ShellType {
 #[serde(rename_all = "kebab-case")]
 pub enum SpecialTypeType {
     Restart,
+    Start,
+    Stop,
 }
 
 fn default_special_ignore_unsupported() -> bool {

@@ -100,12 +100,28 @@ impl EnginePodman {
         Ok(())
     }
 
+    pub fn start_simple<S: AsRef<str>>(&self, name: S) -> Result<()> {
+        let podman = &self.podman_bin;
+        let name = self.n(name);
+
+        run_fun!($podman start $name)?;
+        Ok(())
+    }
+
     pub fn restart<S: AsRef<str>>(&self, name: S) -> Result<()> {
         let podman = &self.podman_bin;
         let name = self.n(name);
 
         run_fun!($podman stop $name)?;
         run_fun!($podman start $name)?;
+        Ok(())
+    }
+
+    pub fn stop<S: AsRef<str>>(&self, name: S) -> Result<()> {
+        let podman = &self.podman_bin;
+        let name = self.n(name);
+
+        run_fun!($podman stop $name)?;
         Ok(())
     }
 

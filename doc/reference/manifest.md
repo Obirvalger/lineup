@@ -458,7 +458,9 @@ shell.stdout.print = true
 
 ## Special task
 There are several types of special tasks:
-* [restart](#Special-restart-task) - Restart vm or container.
+* [restart](#Special-restart-task) - Restart vm or container;
+* [start](#Special-start-task) - Start vm or container;
+* [stop](#Special-stop-task) - Stop vm or container.
 
 **Return:** `null`.
 
@@ -467,6 +469,20 @@ Example of restarting:
 ```toml
 [[tasklines.setup]]
 special.restart = {}
+```
+
+### Special start task
+Example of starting:
+```toml
+[[tasklines.setup]]
+special.start = {}
+```
+
+### Special stop task
+Example of stoping:
+```toml
+[[tasklines.setup]]
+special.stop = {}
 ```
 
 ## Test task

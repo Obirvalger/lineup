@@ -136,12 +136,28 @@ impl EngineIncus {
         Ok(())
     }
 
+    pub fn start_simple<S: AsRef<str>>(&self, name: S) -> Result<()> {
+        let incus = &self.incus_bin;
+        let name = self.n(name);
+
+        run_fun!($incus start -q $name)?;
+        Ok(())
+    }
+
     pub fn restart<S: AsRef<str>>(&self, name: S) -> Result<()> {
         let incus = &self.incus_bin;
         let name = self.n(name);
 
         run_fun!($incus stop -q $name)?;
         run_fun!($incus start -q $name)?;
+        Ok(())
+    }
+
+    pub fn stop<S: AsRef<str>>(&self, name: S) -> Result<()> {
+        let incus = &self.incus_bin;
+        let name = self.n(name);
+
+        run_fun!($incus stop -q $name)?;
         Ok(())
     }
 

@@ -52,8 +52,20 @@ impl EngineDbg {
         Cmd::new("true")
     }
 
+    pub fn start<N: AsRef<str>>(&self, name: N) -> Result<()> {
+        println!("Worker {}: start", name.as_ref());
+
+        Ok(())
+    }
+
     pub fn restart<N: AsRef<str>>(&self, name: N) -> Result<()> {
         println!("Worker {}: restart", name.as_ref());
+
+        Ok(())
+    }
+
+    pub fn stop<N: AsRef<str>>(&self, name: N) -> Result<()> {
+        println!("Worker {}: stop", name.as_ref());
 
         Ok(())
     }

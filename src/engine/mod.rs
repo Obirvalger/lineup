@@ -103,7 +103,7 @@ impl Engine {
             return Ok(());
         };
         match self {
-            Engine::Dbg(_engine) => Ok(()),
+            Engine::Dbg(engine) => engine.start(name),
             Engine::Docker(engine) => engine.start(name, action),
             Engine::Incus(engine) => engine.start(name, action, storages),
             Engine::Host(_engine) => Ok(()),
@@ -332,6 +332,30 @@ impl Engine {
                 _ => {
                     if !ignore_unsupported {
                         bail!(Error::UnsupportedSpecialTask("restart".to_string(),))
+                    }
+                }
+            },
+            SpecialTypeType::Start => match self {
+                Engine::Dbg(dbg) => dbg.start(name)?,
+                Engine::Docker(docker) => docker.start_simple(name)?,
+                Engine::Incus(incus) => incus.start_simple(name)?,
+                Engine::Podman(podman) => podman.start_simple(name)?,
+                Engine::Vml(vml) => vml.start_simple(name)?,
+                _ => {
+                    if !ignore_unsupported {
+                        bail!(Error::UnsupportedSpecialTask("start".to_string(),))
+                    }
+                }
+            },
+            SpecialTypeType::Stop => match self {
+                Engine::Dbg(dbg) => dbg.stop(name)?,
+                Engine::Docker(docker) => docker.stop(name)?,
+                Engine::Incus(incus) => incus.stop(name)?,
+                Engine::Podman(podman) => podman.stop(name)?,
+                Engine::Vml(vml) => vml.stop(name)?,
+                _ => {
+                    if !ignore_unsupported {
+                        bail!(Error::UnsupportedSpecialTask("stop".to_string(),))
                     }
                 }
             },

@@ -107,12 +107,28 @@ impl EngineVml {
         Ok(())
     }
 
+    pub fn start_simple<S: AsRef<str>>(&self, name: S) -> Result<()> {
+        let vml = &self.vml_cmd;
+        let name = self.n(name);
+
+        run_cmd!($[vml] start --no-ssh -n $name)?;
+        Ok(())
+    }
+
     pub fn restart<S: AsRef<str>>(&self, name: S) -> Result<()> {
         let vml = &self.vml_cmd;
         let name = self.n(name);
 
         run_cmd!($[vml] stop -n $name)?;
         run_cmd!($[vml] start --no-ssh -n $name)?;
+        Ok(())
+    }
+
+    pub fn stop<S: AsRef<str>>(&self, name: S) -> Result<()> {
+        let vml = &self.vml_cmd;
+        let name = self.n(name);
+
+        run_cmd!($[vml] stop -n $name)?;
         Ok(())
     }
 
