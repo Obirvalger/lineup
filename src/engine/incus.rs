@@ -19,6 +19,7 @@ pub struct EngineIncus {
     pub net: Option<EngineIncusNet>,
     pub nproc: Option<String>,
     pub image: String,
+    pub hostname: Option<String>,
     pub copy: Option<String>,
     pub storages: BTreeMap<String, EngineIncusStorage>,
     pub user: Option<String>,
@@ -41,6 +42,7 @@ impl EngineIncus {
             net: manifest_engine_incus.net,
             nproc,
             image: manifest_engine_incus.image,
+            hostname: manifest_engine_incus.hostname,
             copy: manifest_engine_incus.copy,
             storages: manifest_engine_incus.storages,
             user: manifest_engine_incus.user,
@@ -96,6 +98,9 @@ impl EngineIncus {
         }
         if let Some(nproc) = &self.nproc {
             run_fun!(incus config set $name limits.cpu=$nproc)?;
+        }
+        if let Some(hostname) = &self.hostname {
+            run_fun!(incus config set $name raw.lxc=lxc.uts.name=$hostname)?;
         }
 
         if let Some(net) = &self.net {

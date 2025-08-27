@@ -306,6 +306,7 @@ pub struct EngineIncus {
     pub net: Option<EngineIncusNet>,
     pub nproc: Option<StringOrInt>,
     pub image: String,
+    pub hostname: Option<String>,
     pub copy: Option<String>,
     #[serde(default)]
     pub storages: BTreeMap<String, EngineIncusStorage>,
@@ -324,12 +325,13 @@ impl Render for EngineIncus {
         let net = self.net.render(context, format!("net in {}", place))?;
         let nproc = self.nproc.render(context, format!("nproc in {}", place))?;
         let image = self.image.render(context, format!("image in {}", place))?;
+        let hostname = self.hostname.render(context, format!("hostname in {}", place))?;
         let copy = self.copy.render(context, format!("copy in {}", place))?;
         let storages = self.storages.render(context, format!("storages in {}", place))?;
         let user = self.user.render(context, format!("user in {}", place))?;
         let exists = self.exists.to_owned();
         let base = self.base.render(context, format!("base in {}", place))?;
-        Ok(Self { memory, net, nproc, image, copy, storages, user, exists, base })
+        Ok(Self { memory, net, nproc, image, hostname, copy, storages, user, exists, base })
     }
 }
 

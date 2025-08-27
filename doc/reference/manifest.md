@@ -662,6 +662,7 @@ Incus-specific options are:
 * `net` - Describe network;
 * `nproc` - Number of processors;
 * `memory` - Amount of memory;
+* `hostname` - Hostname;
 * `storages` - Table with volume names as keys and
     [storage](#Incus-engine-storage) values;
 * `user` - User.
