@@ -9,11 +9,6 @@ use rust_embed::RustEmbed;
 use crate::config::{config_dir, CONFIG};
 
 #[derive(RustEmbed)]
-#[folder = "files/configs"]
-#[prefix = "configs/"]
-struct AssetConfigs;
-
-#[derive(RustEmbed)]
 #[folder = "files/modules"]
 #[prefix = "modules/"]
 struct AssetModules;
