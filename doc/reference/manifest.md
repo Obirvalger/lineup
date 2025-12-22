@@ -811,6 +811,13 @@ items = { start = 1, end = 6, step = 2 }
 parallel = false
 ```
 
+Items variable could be changed via `items-var` field:
+```toml
+info.msg = "{{ text }}"
+items-var = "text"
+items = ["lil", "lal"]
+```
+
 
 # Extend
 This section provides additional functionality to some other sections.
