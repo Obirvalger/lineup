@@ -297,6 +297,21 @@ fn re_sub(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
     }
 }
 
+fn to_list(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
+    match value {
+        Value::Array(_) => Ok(value.to_owned()),
+        Value::Object(m) => {
+            let mut array = Vec::with_capacity(m.len());
+            for (k, v) in m {
+                array.push(Value::Array(vec![Value::String(k.to_string()), v.to_owned()]));
+            }
+
+            Ok(Value::Array(array))
+        }
+        _ => Ok(Value::Array(vec![value.to_owned()])),
+    }
+}
+
 fn confirm(args: &HashMap<String, Value>) -> tera::Result<Value> {
     let msg = match args.get("msg") {
         Some(val) => match tera::from_value::<String>(val.to_owned()) {
@@ -472,6 +487,7 @@ pub fn render<S: ToString, P: AsRef<str>>(
             tera.register_filter("quote", wrap_filter(Box::new(quote)));
             tera.register_filter("re_match", wrap_filter(Box::new(re_match)));
             tera.register_filter("re_sub", wrap_filter(Box::new(re_sub)));
+            tera.register_filter("to_list", wrap_filter(Box::new(to_list)));
 
             tera.register_function("confirm", confirm);
             tera.register_function("fs", wrap_function(Box::new(fs_function)));

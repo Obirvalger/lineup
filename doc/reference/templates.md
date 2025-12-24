@@ -15,7 +15,8 @@ There are lineup `filters` besides `tera` built-ins:
 * `lines` - Split string value by newlines;
 * [quote](#quote), `q` - Shell escapes value;
 * [re_match](#re-match) - Regex match;
-* [re_sub](#re-sub) - Regex sub.
+* [re_sub](#re-sub) - Regex sub;
+* [to_list](#to-list) - Casts the value to a list type.
 
 ## Cond
 Cond filter has two argument `if` and `else`. Return `if` argument if the value
@@ -68,6 +69,11 @@ info.msg = "{{ versions | re_sub(re='.*?(\\d(\\.\\d)*).*', str='$1', matches_onl
 vars.versions = ['ver-1.2.3', 'stable', '2.2-alt1', 3]
 ```
 
+## To list
+Casts the value to a list type:
+* Lists remain unchanged;
+* Objects transformed into a list of lists (pairs of key and value);
+* Values of other types are wrapped into a one‑element list.
 
 # Functions
 There are lineup `functions` besides `tera` built-ins:
