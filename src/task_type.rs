@@ -747,6 +747,7 @@ impl TaskType {
                 runner.add_extra_vars(Vars::from(context.to_owned()));
                 runner.set_storages(env.storages);
                 runner.set_workers(&new_workers);
+                runner.set_task_filter(env.task_filter);
                 runner.run()?;
                 Ok(Value::Null.into())
             }

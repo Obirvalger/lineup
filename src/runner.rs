@@ -19,6 +19,7 @@ use crate::network::Network;
 use crate::render::Render;
 use crate::storage::{Storage, Storages};
 use crate::task::Env;
+use crate::task_filter::TaskFilter;
 use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::tsort::tsort;
@@ -43,6 +44,7 @@ fn save_layers(layers: &Vec<Vec<String>>) -> Result<()> {
 pub struct Runner {
     pub taskset: Taskset,
     pub skip_tasks: Vec<String>,
+    pub task_filter: TaskFilter,
     pub tasklines: Tasklines,
     pub vars: Vars,
     pub networks: Vec<Network>,
@@ -184,11 +186,13 @@ impl Runner {
             Worker::from_manifest_workers(&manifest.workers, &defaults.worker, &context, &dir)?;
         let worker_exists = None;
         let skip_tasks = vec![];
+        let task_filter = TaskFilter::new();
 
         Ok(Self {
             dir,
             taskset,
             skip_tasks,
+            task_filter,
             tasklines,
             vars,
             networks,
@@ -212,6 +216,10 @@ impl Runner {
 
     pub fn skip_tasks(&mut self, tasks: &[String]) {
         self.skip_tasks = Vec::from(tasks);
+    }
+
+    pub fn set_task_filter(&mut self, filter: &TaskFilter) {
+        self.task_filter = filter.to_owned();
     }
 
     pub fn set_worker_exists_action(&mut self, action: Option<ExistsAction>) {
@@ -260,6 +268,7 @@ impl Runner {
         self.setup_networks()?;
 
         let layers = tsort(&tasks_graph, "taskset requires")?;
+        let layers = self.task_filter.filter_layers(&layers);
         save_layers(&layers)?;
 
         for layer in layers {
@@ -312,11 +321,15 @@ impl Runner {
                     .collect::<Vec<_>>();
                 let task = &taskset_elem.task;
 
+                let mut task_filter = self.task_filter.to_owned();
+                task_filter.taskset_enter(name);
+
                 let env = Env {
                     dir: &self.dir,
                     storages: &self.storages,
                     tasklines: &self.tasklines,
                     workers: &provide_workers,
+                    task_filter: &task_filter,
                 };
 
                 self.workers.par_iter().try_for_each(|worker| -> Result<()> {

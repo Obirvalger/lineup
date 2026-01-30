@@ -18,6 +18,7 @@ use crate::manifest::Tasklines;
 use crate::render::Render;
 use crate::storage::Storages;
 use crate::table::Table;
+use crate::task_filter::TaskFilter;
 use crate::task_result::TaskResult;
 use crate::task_type::{CmdParams, TaskType};
 use crate::template::Context;
@@ -29,6 +30,7 @@ pub struct Env<'a> {
     pub dir: &'a PathBuf,
     pub storages: &'a Storages,
     pub tasklines: &'a Tasklines,
+    pub task_filter: &'a TaskFilter,
     pub workers: &'a Vec<Worker>,
 }
 

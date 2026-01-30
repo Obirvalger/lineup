@@ -15,6 +15,7 @@ use crate::config::{CONFIG, config_initialized};
 use crate::error::Error;
 use crate::render::Render;
 use crate::runner::Runner;
+use crate::task_filter::TaskFilter;
 use crate::tmpdir::TMPDIR;
 use crate::vars::Vars;
 
@@ -39,6 +40,7 @@ mod storage;
 mod string_or_int;
 mod table;
 mod task;
+mod task_filter;
 mod task_result;
 mod task_type;
 mod taskline;
@@ -113,6 +115,9 @@ fn inner_main() -> Result<()> {
             runner.set_worker_exists_action(args.worker_exists);
             // Do after initializing to overwrite vars from manifest
             runner.add_extra_vars(extra_vars);
+            let mut task_filter = TaskFilter::new();
+            task_filter.taskset_interval(&args.taskset_first, &args.taskset_last);
+            runner.set_task_filter(&task_filter);
             runner.skip_tasks(&args.skip_tasks);
             runner.run()?;
 
