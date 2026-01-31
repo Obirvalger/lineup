@@ -43,7 +43,6 @@ fn save_layers(layers: &Vec<Vec<String>>) -> Result<()> {
 #[derive(Clone, Debug)]
 pub struct Runner {
     pub taskset: Taskset,
-    pub skip_tasks: Vec<String>,
     pub task_filter: TaskFilter,
     pub tasklines: Tasklines,
     pub vars: Vars,
@@ -185,13 +184,11 @@ impl Runner {
         let workers =
             Worker::from_manifest_workers(&manifest.workers, &defaults.worker, &context, &dir)?;
         let worker_exists = None;
-        let skip_tasks = vec![];
         let task_filter = TaskFilter::new();
 
         Ok(Self {
             dir,
             taskset,
-            skip_tasks,
             task_filter,
             tasklines,
             vars,
@@ -212,10 +209,6 @@ impl Runner {
 
     pub fn set_workers(&mut self, workers: &[Worker]) {
         self.workers = Vec::from(workers);
-    }
-
-    pub fn skip_tasks(&mut self, tasks: &[String]) {
-        self.skip_tasks = Vec::from(tasks);
     }
 
     pub fn set_task_filter(&mut self, filter: &TaskFilter) {
@@ -307,10 +300,6 @@ impl Runner {
             }
 
             layer.par_iter().try_for_each(|name| -> Result<()> {
-                if self.skip_tasks.contains(name) {
-                    return Ok(());
-                }
-
                 let taskset_elem =
                     self.taskset.get(name).ok_or(Error::BadTaskInTaskset(name.to_string()))?;
                 let provide_workers = self

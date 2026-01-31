@@ -118,7 +118,6 @@ fn inner_main() -> Result<()> {
             let mut task_filter = TaskFilter::new();
             task_filter.taskset_interval(&args.taskset_first, &args.taskset_last);
             runner.set_task_filter(&task_filter);
-            runner.skip_tasks(&args.skip_tasks);
             runner.run()?;
 
             if CONFIG.clean {
