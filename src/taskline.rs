@@ -12,11 +12,7 @@ pub enum Taskline {
 
 impl Taskline {
     pub fn as_line(&self) -> Option<&Vec<TasklineElem>> {
-        if let Self::Line(line) = self {
-            Some(line)
-        } else {
-            None
-        }
+        if let Self::Line(line) = self { Some(line) } else { None }
     }
 
     pub fn is_line(&self) -> bool {

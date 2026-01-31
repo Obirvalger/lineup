@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use serde_json::Value;
 
-use crate::template::{render, Context};
+use crate::template::{Context, render};
 
 pub trait Render: Sized {
     fn render<S: AsRef<str>>(&self, context: &Context, place: S) -> Result<Self>;

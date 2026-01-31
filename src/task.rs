@@ -34,11 +34,7 @@ pub struct Env<'a> {
 
 fn show_duration(duration: Duration) -> String {
     let ms = duration.as_millis();
-    if ms < 2000 {
-        format!("{} ms", ms)
-    } else {
-        format!("{} s", duration.as_secs())
-    }
+    if ms < 2000 { format!("{} ms", ms) } else { format!("{} s", duration.as_secs()) }
 }
 
 fn default_task_items_table_items_var() -> String {
@@ -139,14 +135,14 @@ impl Task {
                     .unwrap_or_else(|| vec![BTreeMap::new()]);
                 let mut context = context.to_owned();
                 context.insert(&items_var, &item);
-                if let Some(items_table) = &self.items_table {
-                    if let Some(table_by_item) = &items_table.table_by_item {
-                        for row in table_by_item.list(&context)? {
-                            if let Some(table_item) = row.get("item") {
-                                if table_item == &item {
-                                    context.insert("row_by_item", &row);
-                                }
-                            }
+                if let Some(items_table) = &self.items_table
+                    && let Some(table_by_item) = &items_table.table_by_item
+                {
+                    for row in table_by_item.list(&context)? {
+                        if let Some(table_item) = row.get("item")
+                            && table_item == &item
+                        {
+                            context.insert("row_by_item", &row);
                         }
                     }
                 }
@@ -200,10 +196,10 @@ impl Task {
                                 final_attempt = attempt;
                                 if res.is_err() {
                                     thread::sleep(try_.sleep);
-                                    if let Some(cleanup) = &try_.cleanup {
-                                        if cleanup.task.run(&context, env, worker).is_err() {
-                                            warn!("Cleanup command failed");
-                                        }
+                                    if let Some(cleanup) = &try_.cleanup
+                                        && cleanup.task.run(&context, env, worker).is_err()
+                                    {
+                                        warn!("Cleanup command failed");
                                     }
                                     res = self.task_type.run(&context, env, worker);
                                 } else {
@@ -297,12 +293,12 @@ impl Task {
             }
         };
 
-        if let Some(fs_var_name) = &self.result_fs_var {
-            if let Some(value) = result.as_value() {
-                let fs_var_name = fs_var_name.render(&context, "task result-fs-var")?;
-                let fs_var = FsVar::new(fs_var_name)?;
-                fs_var.write(value)?;
-            }
+        if let Some(fs_var_name) = &self.result_fs_var
+            && let Some(value) = result.as_value()
+        {
+            let fs_var_name = fs_var_name.render(&context, "task result-fs-var")?;
+            let fs_var = FsVar::new(fs_var_name)?;
+            fs_var.write(value)?;
         }
 
         Ok(result)

@@ -10,8 +10,8 @@ use rayon::ThreadPoolBuilder;
 use scopeguard::defer;
 use serde_json::Value;
 
-use crate::cli::{print_completions, Cli, Commands};
-use crate::config::{config_initialized, CONFIG};
+use crate::cli::{Cli, Commands, print_completions};
+use crate::config::{CONFIG, config_initialized};
 use crate::error::Error;
 use crate::render::Render;
 use crate::runner::Runner;
@@ -64,11 +64,7 @@ fn parse_extra_vars(extra_vars: &[String]) -> Result<Vars> {
 
 fn find_manifest() -> PathBuf {
     let local = PathBuf::from("LM.local.toml");
-    if local.exists() {
-        local
-    } else {
-        PathBuf::from("LM.toml")
-    }
+    if local.exists() { local } else { PathBuf::from("LM.toml") }
 }
 
 fn inner_main() -> Result<()> {

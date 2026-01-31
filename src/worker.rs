@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 use crate::cmd::CmdOut;
 use crate::engine::{Engine, ExistsAction};
@@ -63,10 +63,10 @@ impl Worker {
             for item in items {
                 context.insert("item", &item);
                 for row in &worker.table_by_item.list(&context)? {
-                    if let Some(table_item) = row.get("item") {
-                        if *table_item == item {
-                            context.insert("row_by_item", &row);
-                        }
+                    if let Some(table_item) = row.get("item")
+                        && *table_item == item
+                    {
+                        context.insert("row_by_item", &row);
                     }
                 }
 

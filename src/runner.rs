@@ -5,7 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::Context as AnyhowContext;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use log::warn;
 use rayon::prelude::*;
 use regex::RegexSet;

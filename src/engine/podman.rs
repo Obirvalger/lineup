@@ -136,12 +136,11 @@ impl EnginePodman {
             run_fun!($podman rm -f $name)?;
         }
 
-        if let Some(pod) = &self.pod {
-            if run_cmd!($podman pod exists $pod).is_ok()
-                && run_fun!($podman pod inspect $pod --format "{{.NumContainers}}")? == "1"
-            {
-                run_fun!($podman pod rm $pod)?;
-            }
+        if let Some(pod) = &self.pod
+            && run_cmd!($podman pod exists $pod).is_ok()
+            && run_fun!($podman pod inspect $pod --format "{{.NumContainers}}")? == "1"
+        {
+            run_fun!($podman pod rm $pod)?;
         }
 
         Ok(())

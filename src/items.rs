@@ -1,5 +1,5 @@
 use anyhow::Context as AnyhowContext;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use cmd_lib::run_fun;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

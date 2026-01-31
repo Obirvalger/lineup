@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use serde_json::{to_value, Value};
+use serde_json::{Value, to_value};
 
 use crate::exception::Exception;
 use crate::template::Context;

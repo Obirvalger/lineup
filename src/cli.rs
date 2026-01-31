@@ -2,7 +2,7 @@ use std::io;
 use std::path::PathBuf;
 
 use clap::{Command, Parser, Subcommand};
-use clap_complete::{generate, Generator, Shell};
+use clap_complete::{Generator, Shell, generate};
 
 use crate::engine::ExistsAction;
 
@@ -60,6 +60,6 @@ pub struct Cli {
     pub command: Option<Commands>,
 }
 
-pub fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
-    generate(gen, cmd, cmd.get_name().to_string(), &mut io::stdout());
+pub fn print_completions<G: Generator>(g: G, cmd: &mut Command) {
+    generate(g, cmd, cmd.get_name().to_string(), &mut io::stdout());
 }

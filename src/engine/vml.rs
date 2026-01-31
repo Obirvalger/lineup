@@ -208,10 +208,6 @@ impl EngineVml {
 
     fn n<S: AsRef<str>>(&self, name: S) -> String {
         let name = self.base.name.to_owned().unwrap_or_else(|| name.as_ref().to_string());
-        if let Some(parent) = &self.parent {
-            format!("{}/{}", parent, name)
-        } else {
-            name
-        }
+        if let Some(parent) = &self.parent { format!("{}/{}", parent, name) } else { name }
     }
 }

@@ -6,7 +6,7 @@ use std::result::Result as StdResult;
 use std::str::FromStr;
 
 use anyhow::Context as AnyhowContext;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};

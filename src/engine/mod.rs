@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use log::debug;
 use serde::{Deserialize, Serialize};
 
@@ -245,14 +245,14 @@ impl Engine {
             return Self::run_wrap_error(error, None, params, &out);
         }
 
-        if let Some(matches) = &params.failure_matches {
-            if matches.is_match(&stdout, &stderr)? {
-                out.matched = true;
-                if check {
-                    let error =
-                        Error::CommandFailedFailureMatches(command_in_error.as_ref().to_string());
-                    return Self::run_wrap_error(error, Some(matches), params, &out);
-                }
+        if let Some(matches) = &params.failure_matches
+            && matches.is_match(&stdout, &stderr)?
+        {
+            out.matched = true;
+            if check {
+                let error =
+                    Error::CommandFailedFailureMatches(command_in_error.as_ref().to_string());
+                return Self::run_wrap_error(error, Some(matches), params, &out);
             }
         }
 

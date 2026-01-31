@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use cmd_lib::{run_cmd, run_fun};
 
 use crate::cmd::Cmd;
@@ -181,13 +181,12 @@ impl EngineIncus {
     fn strip_same_name_dst<S: AsRef<Path>, D: AsRef<Path>>(src: S, dst: D) -> PathBuf {
         let src = src.as_ref();
         let dst = dst.as_ref();
-        if let Some(src_name) = src.file_name() {
-            if let Some(dst_name) = dst.file_name() {
-                if src_name == dst_name {
-                    let dst = dst.parent().expect("Destination has basename but lacks a dirname");
-                    return dst.to_owned();
-                }
-            }
+        if let Some(src_name) = src.file_name()
+            && let Some(dst_name) = dst.file_name()
+            && src_name == dst_name
+        {
+            let dst = dst.parent().expect("Destination has basename but lacks a dirname");
+            return dst.to_owned();
         }
 
         dst.to_owned()

@@ -5,11 +5,11 @@ pub use regex::Regex;
 pub use tera::Context;
 
 use anyhow::Context as AnyhowContext;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use cmd_lib::run_fun;
 use inquire::{Confirm, Text};
 use lazy_static::lazy_static;
-use serde_json::value::{to_value, Value};
+use serde_json::value::{Value, to_value};
 use serde_json::{to_string, to_string_pretty};
 use tera::Tera;
 
@@ -324,7 +324,7 @@ fn confirm(args: &HashMap<String, Value>) -> tera::Result<Value> {
             }
         },
         None => {
-            return Err(tera::Error::msg("Function `confirm` didn't receive a `msg` argument"))
+            return Err(tera::Error::msg("Function `confirm` didn't receive a `msg` argument"));
         }
     };
     let default = match args.get("default") {
@@ -379,7 +379,7 @@ fn host_cmd(args: &HashMap<String, Value>) -> tera::Result<Value> {
     let cmd = match args.get("cmd") {
         Some(val) => val,
         None => {
-            return Err(tera::Error::msg("Function `host_cmd` didn't receive a `cmd` argument"))
+            return Err(tera::Error::msg("Function `host_cmd` didn't receive a `cmd` argument"));
         }
     };
 
@@ -397,7 +397,7 @@ fn host_cmd(args: &HashMap<String, Value>) -> tera::Result<Value> {
                             "Function `host_cmd` received cmd array with element={} but `cmd` \
                              can only contain a string elements",
                             value
-                        )))
+                        )));
                     }
                 }
             }
@@ -408,7 +408,7 @@ fn host_cmd(args: &HashMap<String, Value>) -> tera::Result<Value> {
             return Err(tera::Error::msg(format!(
                 "Function `host_cmd` received cmd={} but `cmd` can only be a string or an array",
                 cmd
-            )))
+            )));
         }
     };
 

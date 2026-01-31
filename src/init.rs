@@ -2,7 +2,7 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::Context as AnyhowContext;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 use crate::config::CONFIG;
 use crate::error::Error;

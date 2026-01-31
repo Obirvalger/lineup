@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use anyhow::Context as AnyhowContext;
-use anyhow::{bail, Result};
-use log::{debug, info, log, trace, warn, LevelFilter};
+use anyhow::{Result, bail};
+use log::{LevelFilter, debug, info, log, trace, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 

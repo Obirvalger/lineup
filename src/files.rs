@@ -6,7 +6,7 @@ use anyhow::Result;
 use file_lock::{FileLock, FileOptions};
 use rust_embed::RustEmbed;
 
-use crate::config::{config_dir, CONFIG};
+use crate::config::{CONFIG, config_dir};
 
 #[derive(RustEmbed)]
 #[folder = "files/modules"]
@@ -31,14 +31,14 @@ pub fn install_file<S: AsRef<str>>(filename: S, directory: &Path) -> Result<()> 
     let filename = filename.as_ref();
     let mut basename = filename.to_owned();
     let path = Path::new(filename);
-    if let Some(parent) = path.parent() {
-        if parent != Path::new("") {
-            basename = path
-                .file_name()
-                .expect("trying to install file with bad filename")
-                .to_string_lossy()
-                .to_string();
-        }
+    if let Some(parent) = path.parent()
+        && parent != Path::new("")
+    {
+        basename = path
+            .file_name()
+            .expect("trying to install file with bad filename")
+            .to_string_lossy()
+            .to_string();
     }
     fs::create_dir_all(directory)?;
 
@@ -54,15 +54,15 @@ fn install_hier<S: AsRef<str>>(filename: S, directory: &Path) -> Result<()> {
     let mut basename = filename.to_owned();
     let path = Path::new(filename);
     let mut directory = directory.to_owned();
-    if let Some(parent) = path.parent() {
-        if parent != Path::new("") {
-            directory = directory.join(parent);
-            basename = path
-                .file_name()
-                .expect("trying to install file with bad filename")
-                .to_string_lossy()
-                .to_string();
-        }
+    if let Some(parent) = path.parent()
+        && parent != Path::new("")
+    {
+        directory = directory.join(parent);
+        basename = path
+            .file_name()
+            .expect("trying to install file with bad filename")
+            .to_string_lossy()
+            .to_string();
     }
     fs::create_dir_all(&directory)?;
 

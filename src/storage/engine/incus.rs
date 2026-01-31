@@ -1,7 +1,7 @@
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use cmd_lib::run_fun;
 
 use crate::error::Error;
