@@ -56,6 +56,15 @@ pub struct Cli {
     #[arg(
         long,
         required = false,
+        num_args = 1..,
+        value_name = "TASK",
+        help = "Do not run this tasks from taskset (split nested tasks on .)"
+    )]
+    pub taskset_skip: Vec<String>,
+
+    #[arg(
+        long,
+        required = false,
         num_args = 1,
         value_name = "TASK",
         help = "First task run from taskset (split nested tasks on .)"

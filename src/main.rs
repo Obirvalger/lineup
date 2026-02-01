@@ -117,6 +117,7 @@ fn inner_main() -> Result<()> {
             runner.add_extra_vars(extra_vars);
             let mut task_filter = TaskFilter::new();
             task_filter.taskset_interval(&args.taskset_first, &args.taskset_last);
+            task_filter.taskset_skip(&args.taskset_skip);
             runner.set_task_filter(&task_filter);
             runner.run()?;
 
