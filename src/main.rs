@@ -112,6 +112,9 @@ fn inner_main() -> Result<()> {
         thread_pool.install(|| -> Result<()> {
             let extra_vars = parse_extra_vars(&args.extra_vars)?;
             let mut runner = Runner::from_manifest(manifest, &extra_vars.context()?)?;
+            if args.cleanup_before {
+                runner.cleanup()?;
+            }
             runner.set_worker_exists_action(args.worker_exists);
             // Do after initializing to overwrite vars from manifest
             runner.add_extra_vars(extra_vars);

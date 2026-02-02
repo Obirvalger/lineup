@@ -45,11 +45,26 @@ pub struct Cli {
     #[arg(long, value_name("ACTION"))]
     pub worker_exists: Option<ExistsAction>,
 
-    #[arg(long, alias = "no-clean", group = "cleanup-grp", required = false)]
+    #[arg(
+        long,
+        alias = "no-clean",
+        group = "cleanup-grp",
+        required = false,
+        help = "Do not cleanup after successefully run all tasks"
+    )]
     pub no_cleanup: bool,
 
-    #[arg(long, alias = "clean", group = "cleanup-grp", required = false)]
+    #[arg(
+        long,
+        alias = "clean",
+        group = "cleanup-grp",
+        required = false,
+        help = "Cleanup after successefully run all tasks"
+    )]
     pub cleanup: bool,
+
+    #[arg(long, alias = "clean-before", required = false, help = "Cleanup before running tasks")]
+    pub cleanup_before: bool,
 
     #[arg(long, short, required = false)]
     pub extra_vars: Vec<String>,
