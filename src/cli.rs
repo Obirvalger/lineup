@@ -11,7 +11,8 @@ pub enum Commands {
     Completion {
         shell: Shell,
     },
-    Clean {
+    #[clap(alias = "clean")]
+    Cleanup {
         #[arg(long, short, default_value = "LM.toml")]
         manifest: PathBuf,
     },
@@ -44,11 +45,11 @@ pub struct Cli {
     #[arg(long, value_name("ACTION"))]
     pub worker_exists: Option<ExistsAction>,
 
-    #[arg(long, group = "clean-grp", required = false)]
-    pub no_clean: bool,
+    #[arg(long, alias = "no-clean", group = "cleanup-grp", required = false)]
+    pub no_cleanup: bool,
 
-    #[arg(long, group = "clean-grp", required = false)]
-    pub clean: bool,
+    #[arg(long, alias = "clean", group = "cleanup-grp", required = false)]
+    pub cleanup: bool,
 
     #[arg(long, short, required = false)]
     pub extra_vars: Vec<String>,

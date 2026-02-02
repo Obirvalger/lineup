@@ -87,9 +87,9 @@ fn inner_main() -> Result<()> {
     if let Some(command) = args.command {
         match command {
             Commands::Completion { shell } => print_completions(shell, &mut Cli::command()),
-            Commands::Clean { manifest } => {
+            Commands::Cleanup { manifest } => {
                 let mut runner = Runner::from_manifest(manifest, &Default::default())?;
-                runner.clean()?;
+                runner.cleanup()?;
             }
             Commands::Init { profile, manifest, extra_vars } => {
                 let extra_vars = parse_extra_vars(&extra_vars)?;
@@ -122,12 +122,12 @@ fn inner_main() -> Result<()> {
             runner.set_task_filter(&task_filter);
             runner.run()?;
 
-            if CONFIG.clean {
-                if !args.no_clean {
-                    runner.clean()?;
+            if CONFIG.cleanup {
+                if !args.no_cleanup {
+                    runner.cleanup()?;
                 }
-            } else if args.clean {
-                runner.clean()?;
+            } else if args.cleanup {
+                runner.cleanup()?;
             }
 
             Ok(())

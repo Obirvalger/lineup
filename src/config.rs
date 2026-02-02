@@ -167,7 +167,7 @@ fn default_install_embedded_modules() -> bool {
     true
 }
 
-fn default_clean() -> bool {
+fn default_cleanup() -> bool {
     true
 }
 
@@ -183,8 +183,8 @@ pub struct Config {
     pub log_level: LevelFilter,
     #[serde(default = "default_install_embedded_modules")]
     pub install_embedded_modules: bool,
-    #[serde(default = "default_clean")]
-    pub clean: bool,
+    #[serde(alias = "clean", default = "default_cleanup")]
+    pub cleanup: bool,
     #[serde(default)]
     pub task: Task,
     #[serde(default)]

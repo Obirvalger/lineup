@@ -219,7 +219,7 @@ impl Runner {
         self.worker_exists = action;
     }
 
-    pub fn clean(&mut self) -> Result<()> {
+    pub fn cleanup(&mut self) -> Result<()> {
         for worker in &mut self.workers {
             worker.ensure_remove()?;
         }

@@ -358,7 +358,7 @@ impl ExecType {
     }
 }
 
-fn default_run_lineup_clean() -> bool {
+fn default_run_lineup_cleanup() -> bool {
     true
 }
 
@@ -367,8 +367,8 @@ fn default_run_lineup_clean() -> bool {
 pub struct RunLineupType {
     manifest: String,
     exists: Option<ExistsAction>,
-    #[serde(default = "default_run_lineup_clean")]
-    clean: bool,
+    #[serde(alias = "clean", default = "default_run_lineup_cleanup")]
+    cleanup: bool,
     #[serde(default)]
     vars: Vars,
 }
@@ -613,7 +613,7 @@ impl TaskType {
                     Ok(context.get("result").cloned().unwrap_or(Value::Null).into())
                 }
             }
-            Self::RunLineup(RunLineupType { manifest, exists, clean, vars }) => {
+            Self::RunLineup(RunLineupType { manifest, exists, cleanup, vars }) => {
                 let manifest = manifest.render(&context, "run-lineup manifest")?;
                 let vars = vars.render(&context, "run-lineup vars")?;
                 context.extend(vars.context()?);
@@ -621,8 +621,8 @@ impl TaskType {
                 runner.add_extra_vars(vars);
                 runner.set_worker_exists_action(exists.to_owned());
                 runner.run()?;
-                if *clean {
-                    runner.clean()?;
+                if *cleanup {
+                    runner.cleanup()?;
                 }
                 Ok(Value::Null.into())
             }

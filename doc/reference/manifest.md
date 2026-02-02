@@ -363,7 +363,7 @@ Run a lineup manifest. Fields:
 * `manifest` - Path to the lineup manifest;
 * `exists` - Perform an action when a worker exists, variants are
     `fail`, `ignore`, and `replace`.
-* `clean` - Boolean value controlling clean;
+* `cleanup` - Boolean value controlling cleanup;
 * `vars` - Pass extra vars to the manifest.
 
 **Return:** `null`.
