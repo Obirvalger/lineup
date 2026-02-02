@@ -116,6 +116,7 @@ fn inner_main() -> Result<()> {
             // Do after initializing to overwrite vars from manifest
             runner.add_extra_vars(extra_vars);
             let mut task_filter = TaskFilter::new();
+            task_filter.taskline_skip(&args.taskline_skip)?;
             task_filter.taskset_interval(&args.taskset_first, &args.taskset_last);
             task_filter.taskset_skip(&args.taskset_skip);
             runner.set_task_filter(&task_filter);

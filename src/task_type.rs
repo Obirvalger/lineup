@@ -634,6 +634,13 @@ impl TaskType {
             Self::RunTaskline(RunTasklineType { taskline: taskline_name, module }) => {
                 let module = module.render(&context, "run-taskline file")?;
                 let taskline_name = taskline_name.render(&context, "run-taskline taskline")?;
+                if let Some(skipped) = env.task_filter.skiped_taskline_value(&taskline_name) {
+                    if let Some(value) = skipped {
+                        return Ok(value.into());
+                    } else {
+                        return Ok(context.get("result").cloned().unwrap_or(Value::Null).into());
+                    }
+                }
                 let mut taskline_file = "".to_string();
                 let mut dir = env.dir.to_owned();
                 let mut new_tasklines = env.tasklines.to_owned();

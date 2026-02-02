@@ -57,6 +57,15 @@ pub struct Cli {
         long,
         required = false,
         num_args = 1..,
+        value_name = "NAME[=VALUE]",
+        help = "Skip runnig every taskline with this name (return json encoded value if set)"
+    )]
+    pub taskline_skip: Vec<String>,
+
+    #[arg(
+        long,
+        required = false,
+        num_args = 1..,
         value_name = "TASK",
         help = "Do not run this tasks from taskset (split nested tasks on .)"
     )]

@@ -1,4 +1,7 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+
+use anyhow::{Context, Result};
+use serde_json::Value;
 
 #[derive(Clone, Debug)]
 struct Task {
@@ -82,6 +85,7 @@ impl SetOfTasks {
 
 #[derive(Clone, Debug)]
 pub struct TaskFilter {
+    taskline_skip: BTreeMap<String, Option<Value>>,
     taskset_first: Task,
     taskset_last: Task,
     taskset_skip: SetOfTasks,
@@ -90,10 +94,31 @@ pub struct TaskFilter {
 impl TaskFilter {
     pub fn new() -> Self {
         Self {
+            taskline_skip: BTreeMap::new(),
             taskset_first: Task::empty(),
             taskset_last: Task::empty(),
             taskset_skip: SetOfTasks::new(&[]),
         }
+    }
+
+    pub fn skiped_taskline_value<S: AsRef<str>>(&self, name: S) -> Option<Option<Value>> {
+        self.taskline_skip.get(name.as_ref()).cloned()
+    }
+
+    pub fn taskline_skip(&mut self, tasklines: &[String]) -> Result<()> {
+        let mut skip_tasklines = BTreeMap::<String, Option<Value>>::new();
+        for tl in tasklines {
+            if let Some((name, value)) = tl.split_once('=') {
+                let value: Value = serde_json::from_str(value)
+                    .with_context(|| format!("failed to parse json taskline value `{}`", value))?;
+                skip_tasklines.insert(name.to_string(), Some(Value::String(value.to_string())));
+            } else {
+                skip_tasklines.insert(tl.to_string(), None);
+            }
+        }
+        self.taskline_skip = skip_tasklines;
+
+        Ok(())
     }
 
     pub fn taskset_enter<S: AsRef<str>>(&mut self, name: S) {
