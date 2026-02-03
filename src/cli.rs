@@ -9,15 +9,15 @@ use crate::engine::ExistsAction;
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     /// Print shell completion
-    Completion {
-        shell: Shell,
-    },
+    Completion { shell: Shell },
+
     #[clap(alias = "clean")]
     /// Cleanup all artifacts: workers, networks and storages
     Cleanup {
         #[arg(long, short, default_value = "LM.toml")]
         manifest: PathBuf,
     },
+
     /// Create lineup manifest
     Init {
         #[arg(long, short, default_value = "default")]
