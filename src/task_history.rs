@@ -5,14 +5,15 @@ use std::sync::{Arc, Mutex};
 use log::warn;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 enum HistoryElem {
     Taskset(String),
     Taskline(String),
     TasklineEntry(usize),
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(transparent)]
 pub struct History {
     history: Vec<HistoryElem>,
 }

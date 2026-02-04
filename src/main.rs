@@ -130,6 +130,9 @@ fn inner_main() -> Result<()> {
             task_filter.taskline_skip(&args.taskline_skip)?;
             task_filter.taskset_interval(&args.taskset_first, &args.taskset_last);
             task_filter.taskset_skip(&args.taskset_skip);
+            if let Some(file) = args.skip_history {
+                task_filter.skip_history_path(file)?;
+            }
             runner.set_task_filter(&task_filter);
             runner.run()?;
 

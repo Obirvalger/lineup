@@ -322,6 +322,9 @@ impl Runner {
 
                 let mut task_filter = self.task_filter.to_owned();
                 task_filter.taskset_enter(name);
+                if task_filter.skipped_history(&history) {
+                    return Ok(());
+                }
 
                 let taskset_elem =
                     self.taskset.get(name).ok_or(Error::BadTaskInTaskset(name.to_string()))?;

@@ -75,6 +75,15 @@ pub struct Cli {
     #[arg(
         long,
         required = false,
+        num_args = 1,
+        value_name = "FILE",
+        help = "Skip tasks from history file (use --completed-tasks-append format)"
+    )]
+    pub skip_history: Option<PathBuf>,
+
+    #[arg(
+        long,
+        required = false,
         num_args = 1..,
         value_name = "NAME[=VALUE]",
         help = "Skip runnig every taskline with this name (return json encoded value if set)"

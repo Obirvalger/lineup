@@ -684,6 +684,9 @@ impl TaskType {
                 context.insert("taskline", &taskline_str);
                 let mut history = env.history.to_owned();
                 history.push_taskline(&taskline_str);
+                if env.task_filter.skipped_history(&history) {
+                    return Ok(Value::Null.into());
+                }
 
                 let mut env = env.to_owned();
                 env.tasklines = &new_tasklines;
@@ -698,6 +701,9 @@ impl TaskType {
                 {
                     let mut history = history.to_owned();
                     history.push_taskline_entry(iter);
+                    if env.task_filter.skipped_history(&history) {
+                        continue;
+                    }
 
                     let result =
                         task.task.run(&task.name, &context, &env, worker).with_context(|| {

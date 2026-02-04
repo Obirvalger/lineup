@@ -1,7 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::path::Path;
 
 use anyhow::{Context, Result};
+use log::warn;
 use serde_json::Value;
+
+use crate::task_history::History;
 
 #[derive(Clone, Debug)]
 struct Task {
@@ -89,6 +95,7 @@ pub struct TaskFilter {
     taskset_first: Task,
     taskset_last: Task,
     taskset_skip: SetOfTasks,
+    skip_history: BTreeSet<History>,
 }
 
 impl TaskFilter {
@@ -98,7 +105,34 @@ impl TaskFilter {
             taskset_first: Task::empty(),
             taskset_last: Task::empty(),
             taskset_skip: SetOfTasks::new(&[]),
+            skip_history: BTreeSet::new(),
         }
+    }
+
+    pub fn skipped_history(&self, history: &History) -> bool {
+        self.skip_history.contains(history)
+    }
+
+    pub fn skip_history_path<P: AsRef<Path>>(&mut self, file: P) -> Result<()> {
+        let file = File::open(file.as_ref())?;
+        let reader = BufReader::new(file);
+        let mut skip_history = BTreeSet::new();
+
+        for line_result in reader.lines() {
+            if let Ok(line) = line_result {
+                if let Ok(history) = serde_json::from_str(&line) {
+                    skip_history.insert(history);
+                } else {
+                    warn!("Failed to parse history line: {}", &line);
+                }
+            } else {
+                warn!("Failed to read history line");
+            }
+        }
+
+        self.skip_history = skip_history;
+
+        Ok(())
     }
 
     pub fn skiped_taskline_value<S: AsRef<str>>(&self, name: S) -> Option<Option<Value>> {
