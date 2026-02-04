@@ -9,3 +9,9 @@ pub static TMPDIR: Lazy<PathBuf> = Lazy::new(|| {
     run_cmd! {mkdir $tmpdir/tmpfiles }.expect("can't create tmpdir/tmpfiles");
     tmpdir
 });
+
+pub fn cleanup() {
+    let tmpdir = &TMPDIR;
+    // ignore fail in removing tmpdir
+    let _ = run_cmd!(rm -rf $tmpdir);
+}

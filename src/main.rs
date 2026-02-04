@@ -5,7 +5,6 @@ use std::sync::{Arc, Mutex};
 use anyhow::Error as AnyhowError;
 use anyhow::Result;
 use clap::{CommandFactory, Parser};
-use cmd_lib::run_cmd;
 use env_logger::Env;
 use log::error;
 use rayon::ThreadPoolBuilder;
@@ -18,7 +17,6 @@ use crate::error::Error;
 use crate::render::Render;
 use crate::runner::Runner;
 use crate::task_filter::TaskFilter;
-use crate::tmpdir::TMPDIR;
 use crate::vars::Vars;
 
 mod cli;
@@ -75,10 +73,8 @@ fn find_manifest() -> PathBuf {
 fn inner_main() -> Result<()> {
     config::init()?;
     files::install_all()?;
-    let tmpdir = &TMPDIR;
     defer! {
-        // ignore fail in removing tmpdir
-        let _ = run_cmd!(rm -rf $tmpdir);
+        tmpdir::cleanup();
     }
     let args = Cli::parse();
     let level = args.log_level.unwrap_or(CONFIG.log_level.to_string());
