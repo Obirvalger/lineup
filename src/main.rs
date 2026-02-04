@@ -1,4 +1,6 @@
+use std::fs::OpenOptions;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 use anyhow::Error as AnyhowError;
 use anyhow::Result;
@@ -41,6 +43,7 @@ mod string_or_int;
 mod table;
 mod task;
 mod task_filter;
+mod task_history;
 mod task_result;
 mod task_type;
 mod taskline;
@@ -114,6 +117,11 @@ fn inner_main() -> Result<()> {
             let mut runner = Runner::from_manifest(manifest, &extra_vars.context()?)?;
             if args.cleanup_before {
                 runner.cleanup()?;
+            }
+            if let Some(file) = args.completed_tasks_append {
+                let file = OpenOptions::new().create(true).append(true).open(file)?;
+                let shared_file = Arc::new(Mutex::new(file));
+                runner.set_completed_tasks_file(&shared_file);
             }
             runner.set_worker_exists_action(args.worker_exists);
             // Do after initializing to overwrite vars from manifest

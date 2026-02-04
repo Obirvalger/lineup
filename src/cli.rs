@@ -108,6 +108,15 @@ pub struct Cli {
     )]
     pub taskset_last: Option<String>,
 
+    #[arg(
+        long,
+        required = false,
+        num_args = 1,
+        value_name = "FILE",
+        help = "Append all completed tasks to a file"
+    )]
+    pub completed_tasks_append: Option<PathBuf>,
+
     #[command(subcommand)]
     pub command: Option<Commands>,
 }

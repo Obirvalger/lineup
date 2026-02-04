@@ -682,6 +682,8 @@ impl TaskType {
                     format!("{}:{}", taskline_file, taskline_name)
                 };
                 context.insert("taskline", &taskline_str);
+                let mut history = env.history.to_owned();
+                history.push_taskline(&taskline_str);
 
                 let mut env = env.to_owned();
                 env.tasklines = &new_tasklines;
@@ -694,10 +696,15 @@ impl TaskType {
                     .iter()
                     .enumerate()
                 {
+                    let mut history = history.to_owned();
+                    history.push_taskline_entry(iter);
+
                     let result =
                         task.task.run(&task.name, &context, &env, worker).with_context(|| {
                             format!("taskline: `{}`, number: `{}`", taskline_str, iter)
                         })?;
+
+                    history.write(env.completed_tasks_file);
 
                     if let Some(v) = result.as_value() {
                         if let Some(vars_context) = result.as_context() {
@@ -718,6 +725,8 @@ impl TaskType {
                         }
                     }
                 }
+
+                history.write(env.completed_tasks_file);
 
                 Ok(value.into())
             }
@@ -755,6 +764,10 @@ impl TaskType {
                 runner.set_storages(env.storages);
                 runner.set_workers(&new_workers);
                 runner.set_task_filter(env.task_filter);
+                runner.set_history(env.history);
+                if let Some(completed_tasks_file) = &env.completed_tasks_file {
+                    runner.set_completed_tasks_file(completed_tasks_file);
+                }
                 runner.run()?;
                 Ok(Value::Null.into())
             }

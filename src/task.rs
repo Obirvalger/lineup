@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
+use std::fs::File;
 use std::num::NonZeroU32;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -19,6 +21,7 @@ use crate::render::Render;
 use crate::storage::Storages;
 use crate::table::Table;
 use crate::task_filter::TaskFilter;
+use crate::task_history::History;
 use crate::task_result::TaskResult;
 use crate::task_type::{CmdParams, TaskType};
 use crate::template::Context;
@@ -30,6 +33,8 @@ pub struct Env<'a> {
     pub dir: &'a PathBuf,
     pub storages: &'a Storages,
     pub tasklines: &'a Tasklines,
+    pub history: &'a History,
+    pub completed_tasks_file: &'a Option<Arc<Mutex<File>>>,
     pub task_filter: &'a TaskFilter,
     pub workers: &'a Vec<Worker>,
 }

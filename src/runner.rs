@@ -2,7 +2,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
+use std::fs::File;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 use anyhow::Context as AnyhowContext;
 use anyhow::{Result, bail};
@@ -20,6 +22,7 @@ use crate::render::Render;
 use crate::storage::{Storage, Storages};
 use crate::task::Env;
 use crate::task_filter::TaskFilter;
+use crate::task_history::History;
 use crate::taskline::Taskline;
 use crate::template::Context;
 use crate::tsort::tsort;
@@ -49,6 +52,8 @@ pub struct Runner {
     pub networks: Vec<Network>,
     pub storages: Storages,
     pub workers: Vec<Worker>,
+    pub completed_tasks_file: Option<Arc<Mutex<File>>>,
+    pub history: History,
     pub dir: PathBuf,
     worker_exists: Option<ExistsAction>,
 }
@@ -185,8 +190,12 @@ impl Runner {
             Worker::from_manifest_workers(&manifest.workers, &defaults.worker, &context, &dir)?;
         let worker_exists = None;
         let task_filter = TaskFilter::new();
+        let completed_tasks_file = None;
+        let history = History::new();
 
         Ok(Self {
+            completed_tasks_file,
+            history,
             dir,
             taskset,
             task_filter,
@@ -209,6 +218,14 @@ impl Runner {
 
     pub fn set_workers(&mut self, workers: &[Worker]) {
         self.workers = Vec::from(workers);
+    }
+
+    pub fn set_completed_tasks_file(&mut self, file: &Arc<Mutex<File>>) {
+        self.completed_tasks_file = Some(file.to_owned());
+    }
+
+    pub fn set_history(&mut self, history: &History) {
+        self.history = history.to_owned();
     }
 
     pub fn set_task_filter(&mut self, filter: &TaskFilter) {
@@ -300,6 +317,12 @@ impl Runner {
             }
 
             layer.par_iter().try_for_each(|name| -> Result<()> {
+                let mut history = self.history.to_owned();
+                history.push_taskset(name);
+
+                let mut task_filter = self.task_filter.to_owned();
+                task_filter.taskset_enter(name);
+
                 let taskset_elem =
                     self.taskset.get(name).ok_or(Error::BadTaskInTaskset(name.to_string()))?;
                 let provide_workers = self
@@ -310,15 +333,14 @@ impl Runner {
                     .collect::<Vec<_>>();
                 let task = &taskset_elem.task;
 
-                let mut task_filter = self.task_filter.to_owned();
-                task_filter.taskset_enter(name);
-
                 let env = Env {
                     dir: &self.dir,
                     storages: &self.storages,
                     tasklines: &self.tasklines,
                     workers: &provide_workers,
                     task_filter: &task_filter,
+                    history: &history,
+                    completed_tasks_file: &self.completed_tasks_file,
                 };
 
                 self.workers.par_iter().try_for_each(|worker| -> Result<()> {
@@ -334,6 +356,7 @@ impl Runner {
                             task.run(&Some(name), &context, &env, worker).with_context(|| {
                                 format!("taskset task: `{}`, worker: `{}`", name, worker.name())
                             })?;
+                        history.write(&self.completed_tasks_file);
                         if let Some(exception) = result.as_exception() {
                             warn!("Got exception: {:?}", exception);
                         }
