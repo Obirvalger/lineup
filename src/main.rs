@@ -1,9 +1,10 @@
+use std::fs;
 use std::fs::OpenOptions;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use anyhow::Error as AnyhowError;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser};
 use env_logger::Env;
 use log::error;
@@ -71,10 +72,36 @@ fn find_manifest() -> PathBuf {
 }
 
 fn cleanup(runner: &mut Runner) -> Result<()> {
+    let lineup_dir = runner.dir.join(".lineup");
+    if lineup_dir.exists() {
+        fs::remove_dir_all(lineup_dir).context("Cleanup .lineup directory")?;
+    }
     runner.cleanup()?;
     fs_var::cleanup()?;
 
     Ok(())
+}
+
+fn resume_completed_tasks<P: AsRef<Path>>(resume: bool, manifest: P) -> Result<Option<PathBuf>> {
+    let manifest = manifest.as_ref();
+    let lineup_dir = manifest
+        .canonicalize()
+        .with_context(|| format!("Failed to find manifest `{}`", &manifest.display()))?
+        .parent()
+        .ok_or_else(|| Error::BadManifest(manifest.to_owned()))?
+        .join(".lineup");
+
+    let mut completed_tasks = None;
+
+    if resume {
+        if !lineup_dir.exists() {
+            fs::create_dir(&lineup_dir).context("Create .lineup directory")?;
+        }
+        fs_var::set_fs_var_dir(&lineup_dir);
+        completed_tasks = Some(lineup_dir.join("completed-tasks.jsonl"));
+    }
+
+    Ok(completed_tasks)
 }
 
 fn inner_main() -> Result<()> {
@@ -115,6 +142,8 @@ fn inner_main() -> Result<()> {
             find_manifest()
         };
 
+        let completed_tasks = resume_completed_tasks(args.resume, &manifest)?;
+
         if let Some(dir) = args.fs_var_dir {
             fs_var::set_fs_var_dir(dir);
         }
@@ -125,8 +154,14 @@ fn inner_main() -> Result<()> {
             if args.cleanup_before {
                 cleanup(&mut runner)?;
             }
-            if let Some(file) = args.completed_tasks_append {
-                let file = OpenOptions::new().create(true).append(true).open(file)?;
+
+            if let Some(file) = args.completed_tasks_append.or_else(|| completed_tasks.to_owned())
+            {
+                let file = OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(&file)
+                    .with_context(|| format!("Completed tasks file {:?}", file))?;
                 let shared_file = Arc::new(Mutex::new(file));
                 runner.set_completed_tasks_file(&shared_file);
             }
@@ -137,7 +172,7 @@ fn inner_main() -> Result<()> {
             task_filter.taskline_skip(&args.taskline_skip)?;
             task_filter.taskset_interval(&args.taskset_first, &args.taskset_last);
             task_filter.taskset_skip(&args.taskset_skip);
-            if let Some(file) = args.skip_history {
+            if let Some(file) = args.skip_history.or(completed_tasks) {
                 task_filter.skip_history_path(file)?;
             }
             runner.set_task_filter(&task_filter);

@@ -59,6 +59,14 @@ pub struct Cli {
 
     #[arg(
         long,
+        required = false,
+        conflicts_with_all = ["fs_var_dir", "skip_history", "completed_tasks_append"],
+        help = "Skip completed tasks (files stored in .lineup dir)"
+    )]
+    pub resume: bool,
+
+    #[arg(
+        long,
         alias = "clean",
         group = "cleanup-grp",
         required = false,
