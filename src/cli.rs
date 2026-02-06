@@ -76,6 +76,15 @@ pub struct Cli {
         long,
         required = false,
         num_args = 1,
+        value_name = "DIR",
+        help = "Store fs vars in the dir insted of a tmpdir"
+    )]
+    pub fs_var_dir: Option<PathBuf>,
+
+    #[arg(
+        long,
+        required = false,
+        num_args = 1,
         value_name = "FILE",
         help = "Skip tasks from history file (use --completed-tasks-append format)"
     )]

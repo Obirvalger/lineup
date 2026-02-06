@@ -70,6 +70,13 @@ fn find_manifest() -> PathBuf {
     if local.exists() { local } else { PathBuf::from("LM.toml") }
 }
 
+fn cleanup(runner: &mut Runner) -> Result<()> {
+    runner.cleanup()?;
+    fs_var::cleanup()?;
+
+    Ok(())
+}
+
 fn inner_main() -> Result<()> {
     config::init()?;
     files::install_all()?;
@@ -88,7 +95,7 @@ fn inner_main() -> Result<()> {
             Commands::Completion { shell } => print_completions(shell, &mut Cli::command()),
             Commands::Cleanup { manifest } => {
                 let mut runner = Runner::from_manifest(manifest, &Default::default())?;
-                runner.cleanup()?;
+                cleanup(&mut runner)?;
             }
             Commands::Init { profile, manifest, extra_vars } => {
                 let extra_vars = parse_extra_vars(&extra_vars)?;
@@ -108,11 +115,15 @@ fn inner_main() -> Result<()> {
             find_manifest()
         };
 
+        if let Some(dir) = args.fs_var_dir {
+            fs_var::set_fs_var_dir(dir);
+        }
+
         thread_pool.install(|| -> Result<()> {
             let extra_vars = parse_extra_vars(&args.extra_vars)?;
             let mut runner = Runner::from_manifest(manifest, &extra_vars.context()?)?;
             if args.cleanup_before {
-                runner.cleanup()?;
+                cleanup(&mut runner)?;
             }
             if let Some(file) = args.completed_tasks_append {
                 let file = OpenOptions::new().create(true).append(true).open(file)?;
@@ -134,10 +145,10 @@ fn inner_main() -> Result<()> {
 
             if CONFIG.cleanup {
                 if !args.no_cleanup {
-                    runner.cleanup()?;
+                    cleanup(&mut runner)?;
                 }
             } else if args.cleanup {
-                runner.cleanup()?;
+                cleanup(&mut runner)?;
             }
 
             Ok(())
