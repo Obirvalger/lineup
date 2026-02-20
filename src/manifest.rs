@@ -390,6 +390,13 @@ pub struct Worker {
     pub engine: Option<Engine>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TasksetElemWhen {
+    Before,
+    After,
+}
+
 fn default_taskset_elem_workers() -> Vec<String> {
     vec![".*".to_string()]
 }
@@ -399,6 +406,8 @@ fn default_taskset_elem_workers() -> Vec<String> {
 pub struct TasksetElem {
     #[serde(default)]
     pub requires: BTreeSet<String>,
+    #[serde(default)]
+    pub when: Option<TasksetElemWhen>,
     #[serde(default = "default_taskset_elem_workers")]
     pub workers: Vec<String>,
     #[serde(default)]
@@ -431,6 +440,7 @@ fn default_taskset() -> Taskset {
     };
     let taskset_elem = TasksetElem {
         requires: Default::default(),
+        when: Default::default(),
         workers: default_taskset_elem_workers(),
         provide_workers: Default::default(),
         task,

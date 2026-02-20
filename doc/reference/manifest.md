@@ -193,6 +193,17 @@ requires = ["setup"]
 # Other task parameters
 ```
 
+To ensure that certain tasks run either before or after others, you can use the
+`when` field. This field accepts two possible values: `"before"` and `"after"`.
+It creates three subsets, each resolving their requirements independently.
+For example, to run a `stop` task at the end without having to set all other
+tasks as its `requires`:
+```toml
+[taskset.stop]
+when = "after"
+special.stop = {}
+```
+
 Also, tasks in a taskset could specify workers to run on using the `workers`
 array, which consists of regexes of worker names. By default, tasks run on all
 workers.

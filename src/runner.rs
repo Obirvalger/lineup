@@ -15,7 +15,7 @@ use serde_json::Value;
 
 use crate::engine::ExistsAction;
 use crate::error::Error;
-use crate::manifest::{Manifest, Tasklines, Taskset};
+use crate::manifest::{Manifest, Tasklines, Taskset, TasksetElemWhen};
 use crate::module;
 use crate::network::Network;
 use crate::render::Render;
@@ -260,6 +260,35 @@ impl Runner {
         Ok(())
     }
 
+    fn layers(&self) -> Result<Vec<Vec<String>>> {
+        let mut layers = Vec::new();
+
+        let mut before_graph = BTreeMap::new();
+        let mut after_graph = BTreeMap::new();
+        let mut graph = BTreeMap::new();
+
+        for (name, task) in &self.taskset {
+            let requires = task.requires.to_owned();
+            if let Some(when) = &task.when {
+                match when {
+                    TasksetElemWhen::Before => before_graph.insert(name, requires),
+                    TasksetElemWhen::After => after_graph.insert(name, requires),
+                };
+            } else {
+                graph.insert(name, requires);
+            }
+        }
+
+        layers.append(&mut tsort(&before_graph, "before taskset requires")?);
+        layers.append(&mut tsort(&graph, "taskset requires")?);
+        layers.append(&mut tsort(&after_graph, "after taskset requires")?);
+
+        let layers = self.task_filter.filter_layers(&layers);
+        save_layers(&layers)?;
+
+        Ok(layers)
+    }
+
     pub fn run(&mut self) -> Result<()> {
         if self.workers.is_empty() {
             bail!(Error::NoWorkers)
@@ -269,19 +298,9 @@ impl Runner {
         context.extend(self.vars.context()?);
         context.insert("manifest_dir", &self.dir.to_string_lossy().to_string());
 
-        let tasks_graph = self
-            .taskset
-            .iter()
-            .map(|(n, t)| (n.to_string(), t.requires.to_owned()))
-            .collect::<BTreeMap<_, _>>();
-
         self.setup_networks()?;
 
-        let layers = tsort(&tasks_graph, "taskset requires")?;
-        let layers = self.task_filter.filter_layers(&layers);
-        save_layers(&layers)?;
-
-        for layer in layers {
+        for layer in self.layers()? {
             let mut workers_by_task = BTreeMap::new();
 
             // setup workers by task sequentially to ensure the same worker does not run
