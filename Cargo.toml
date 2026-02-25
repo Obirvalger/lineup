@@ -3,8 +3,6 @@ name = "lineup"
 version = "0.1.0"
 edition = "2024"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 anyhow = "1.0.100"
 clap = { version = "4.5.56", features = ["cargo", "derive"] }
